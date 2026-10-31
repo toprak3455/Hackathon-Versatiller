@@ -3,198 +3,810 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KTÜ Akıllı Kampüs Ligi</title>
+    <title>KTÜ Of Teknoloji Fakültesi | UI GreenMetric & YÖK Sürdürülebilirlik Platformu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #1a1a2e; color: #fff; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: auto; background: #16213e; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.8); }
-        h1 { color: #00d2ff; text-shadow: 0 0 10px #00d2ff; margin-bottom: 5px; font-size: 2em; }
-        h4 { color: #8892b0; margin-top: 0; font-size: 1.2em; }
-        .gun-etiket { color: #00d2ff; font-weight: bold; background: #0f3460; padding: 5px 15px; border-radius: 20px;}
+        :root {
+            --bg-main: #070b14;
+            --bg-card: #0f172a;
+            --bg-card-inner: #1e293b;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --su-harcanan: #f43f5e;
+            --su-kurtarilan: #06b6d4;
+            --su-kacak: #ec4899;      /* İsraf/Kaçak Su Pembe/Mor */
+            --elk-harcanan: #f59e0b;
+            --elk-kurtarilan: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        #alarmKutusu { display: none; background: #e94560; color: white; padding: 20px; font-size: 1.4em; font-weight: bold; border-radius: 10px; margin: 20px 0; animation: flash 1s infinite; }
-        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding: 22px;
+            min-height: 100vh;
+        }
+
+        .dashboard-wrapper {
+            max-width: 1420px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* ÜST BAR */
+        .top-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 18px 24px;
+            border-radius: 18px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .brand-box { display: flex; align-items: center; gap: 14px; }
+        .brand-logo {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+        }
+        .brand-title h1 { font-size: 1.3rem; font-weight: 800; }
+        .brand-title p { font-size: 0.82rem; color: #10b981; font-weight: 600; margin-top: 2px; }
+
+        .header-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         
-        .status-box { font-size: 1.2em; margin: 20px 0; padding: 20px; background: #0f3460; border-radius: 10px; border: 1px solid #1f4287; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
+        .date-badge {
+            background: var(--bg-card-inner);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 700; font-size: 0.92rem; color: #38bdf8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .btn-action {
+            border: none;
+            padding: 11px 18px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 7px;
+            color: #fff;
+        }
+        .btn-action:hover { transform: translateY(-2px); }
+        .btn-end-day { background: linear-gradient(135deg, #06b6d4, #2563eb); }
+        .btn-excel { background: linear-gradient(135deg, #10b981, #059669); }
+        .btn-pdf { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+        .btn-admin { background: #334155; border: 1px solid rgba(255,255,255,0.15); }
+        .btn-admin.logged-in { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; }
+
+        /* AKTİF ARIZA UYARI BANDI */
+        #alarmKutusu {
+            display: none;
+            background: linear-gradient(90deg, #dc2626, #991b1b);
+            border: 1px solid #f87171;
+            color: #fff;
+            padding: 16px 22px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1.02rem;
+            animation: pulseAlert 1.2s infinite;
+        }
+        @keyframes pulseAlert { 0%, 100% { opacity: 1; } 50% { opacity: 0.78; } }
+
+        /* CANLI TELEMETRİ ŞERİDİ */
+        .telemetry-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .telemetry-left { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.95rem; }
+        .pulse-dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; }
+        .telemetry-pills { display: flex; gap: 12px; flex-wrap: wrap; }
+        .t-pill {
+            background: var(--bg-card-inner);
+            padding: 7px 14px;
+            border-radius: 9px;
+            font-size: 0.86rem;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 3 BİNA CANLI KARTLARI (Kusursuz Görünüm, Taşma/Çizgi Yok) */
+        .bina-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .bina-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 22px;
+        }
+
+        .bina-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);
+        }
+        .bina-header h2 { font-size: 1.25rem; font-weight: 800; }
+        .badge-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        .badge-tag { padding: 4px 9px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
+        .b-ariza { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
+
+        .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .metric-box {
+            background: var(--bg-card-inner);
+            padding: 12px; border-radius: 10px; border-left: 4px solid transparent;
+        }
+        .m-su-h { border-left-color: var(--su-harcanan); }
+        .m-su-k { border-left-color: var(--su-kurtarilan); }
+        .m-su-c { border-left-color: var(--su-kacak); }
+        .m-elk-h { border-left-color: var(--elk-harcanan); }
+        .m-elk-k { border-left-color: var(--elk-kurtarilan); }
         
-        .card { background: #1a1a2e; padding: 20px; border-radius: 10px; border: 1px solid #1f4287; transition: 0.3s; position: relative; }
-        /* Aktif Konum Çerçevesi (Mavi Kesik Çizgi) */
-        .aktif-bina { border: 2px dashed #00d2ff !important; box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
-        /* Lig Lideri Çerçevesi (Sarı Düz Çizgi) */
-        .lig-lider { border-color: #ffd700 !important; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5) !important; border-style: solid !important; }
+        .metric-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; }
+        .metric-val { font-family: 'JetBrains Mono', monospace; font-size: 1.12rem; font-weight: 700; margin-top: 5px; display: block; }
+
+        /* GENEL BÖLÜM KARTI */
+        .section-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+        }
+        .section-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap; gap: 10px;
+        }
+        .section-header h3 { font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .section-hint { font-size: 0.82rem; color: var(--text-muted); background: var(--bg-card-inner); padding: 6px 12px; border-radius: 8px; }
+
+        /* ARIZA DEFTERİ TABLOSU (Metinlerin Taşması Giderildi) */
+        .ariza-table-wrap { max-height: 280px; overflow-y: auto; }
+        .ariza-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; table-layout: fixed; }
+        .ariza-table th {
+            text-align: left; padding: 12px; background: var(--bg-card-inner);
+            color: var(--text-muted); font-weight: 700; position: sticky; top: 0;
+        }
+        .ariza-table td { padding: 12px; border-bottom: 1px solid var(--border-color); word-wrap: break-word; }
         
-        .lig-rozet { position: absolute; top: -15px; right: -15px; background: #ffd700; color: #000; padding: 5px 10px; border-radius: 50%; font-weight: bold; font-size: 1.2em; display: none; }
-        .aktif-rozet { color: #00d2ff; font-size: 0.9em; font-weight: bold; margin-bottom: 5px; }
-        
-        .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 20px; }
-        .btn { background: #00d2ff; color: #000; border: none; padding: 15px 30px; font-size: 1.1em; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn:hover { background: #0099cc; box-shadow: 0 0 15px #00d2ff; }
-        .btn-sim { background: #e94560; color: #fff; }
-        
-        #raporAlani { margin-top: 35px; padding: 25px; background: #0f3460; border-radius: 10px; display: none; text-align: left; }
-        .metafor-text { color: #00d2ff; font-size: 1.2em; margin-top: 15px; line-height: 1.6; }
-        .tasarruf-vurgu { font-size: 1.3em; font-weight: bold; color: #ffd700; }
-        .standart-not { font-size: 0.85em; color: #8892b0; margin-top: 10px; }
+        .status-pill-active {
+            background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444;
+            padding: 5px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem;
+            display: inline-block; white-space: nowrap;
+        }
+        .status-pill-resolved {
+            background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid #10b981;
+            padding: 5px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem;
+        }
+        .btn-resolve {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff; border: none; padding: 7px 12px; border-radius: 8px;
+            font-weight: 700; font-size: 0.78rem; cursor: pointer; white-space: nowrap;
+        }
+        .btn-resolve:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
+
+        /* 1. GÜNLÜK ÖZET (3 GÜN GÖSTERİR) */
+        .gunluk-scroll-viewport {
+            height: 752px; overflow-y: auto; scroll-behavior: smooth; scroll-snap-type: y mandatory;
+            display: flex; flex-direction: column; gap: 16px; padding-right: 6px;
+        }
+        .gunluk-card {
+            height: 240px; min-height: 240px; max-height: 240px;
+            scroll-snap-align: start;
+            background: var(--bg-card-inner);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-left: 5px solid #06b6d4;
+            border-radius: 14px; padding: 16px 20px;
+            display: grid; grid-template-columns: 1.1fr 1.9fr; gap: 20px; align-items: center;
+        }
+        .summary-left {
+            display: flex; flex-direction: column; justify-content: space-between;
+            height: 100%; border-right: 1px solid var(--border-color); padding-right: 16px;
+        }
+        .date-title-row { display: flex; justify-content: space-between; align-items: center; }
+        .date-title { font-size: 1.1rem; font-weight: 800; color: #38bdf8; }
+        .metaphor-list { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+        .metaphor-item { background: rgba(15, 23, 42, 0.65); padding: 7px 10px; border-radius: 8px; font-size: 0.8rem; line-height: 1.3; }
+        .metaphor-item b { color: #38bdf8; }
+
+        .bina-mini-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+        .bina-mini-table th { text-align: left; padding: 6px 8px; background: rgba(15, 23, 42, 0.8); color: var(--text-muted); }
+        .bina-mini-table td { padding: 7px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+        /* 2. HAFTALIK VE AYLIK ÖZET (1 ADET GÖSTERİR) */
+        .periyot-scroll-viewport {
+            height: 640px; overflow-y: auto; scroll-behavior: smooth; scroll-snap-type: y mandatory;
+            display: flex; flex-direction: column; gap: 24px; padding-right: 6px;
+        }
+        .periyot-card {
+            height: 640px; min-height: 640px; max-height: 640px;
+            scroll-snap-align: start;
+            background: var(--bg-card-inner);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 16px; padding: 20px 24px;
+            display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
+        }
+        .periyot-top-grid { display: grid; grid-template-columns: 1.1fr 1.9fr; gap: 20px; align-items: center; height: 210px; }
+        .chart-wrapper { background: rgba(15, 23, 42, 0.75); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px 16px; height: 365px; width: 100%; }
+
+        .empty-state {
+            height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; color: var(--text-muted); gap: 10px;
+            background: rgba(30, 41, 59, 0.4); border: 1px dashed rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 26px;
+        }
+        .progress-bar-bg { width: 260px; height: 10px; background: rgba(255, 255, 255, 0.08); border-radius: 99px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #06b6d4, #10b981); }
+
+        @media print {
+            body { background: #fff; color: #000; }
+            .btn-action, .telemetry-bar { display: none !important; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🏆 FAKÜLTE CANLI TASARRUF LİGİ</h1>
-        <h4>Sürdürülebilir Kampüs IoT Sistemi - <span class="gun-etiket">AKTİF GÜN: <span id="gunSpan">1</span></span></h4>
-        <div class="standart-not">* Tasarruf verileri YALNIZCA "Sabunlama Aralığında Suyun Kesilmesi" durumuna göre saniye bazlı hesaplanmaktadır.</div>
-        
-        <div id="alarmKutusu">⚠️ DİKKAT: <span id="alarmKonum"></span> Su Sızıntısı Algılandı! Solenoid Valfler KAPATILDI!</div>
 
-        <div class="status-box" id="aktifDurum">Sensör Verisi Bekleniyor...</div>
-
-        <div class="grid" id="binaGrid"></div>
-
-        <div class="btn-group">
-            <button class="btn" onclick="gunuBitir()">📅 Günü Bitir & Ligi Güncelle</button>
-            <button class="btn btn-sim" onclick="gecmisiGoster()">📜 Geçmiş Raporlar & Çevresel Etki</button>
+<div class="dashboard-wrapper">
+    <!-- ÜST BAR -->
+    <header class="top-navbar">
+        <div class="brand-box">
+            <div class="brand-logo">🌿</div>
+            <div class="brand-title">
+                <h1>KTÜ OF TEKNOLOJİ FAKÜLTESİ • HYDROPULSE IoT</h1>
+                <p>UI GreenMetric & YÖK Sürdürülebilirlik Muhasebecisi • Akıllı Su ve Kaçak Yönetimi</p>
+            </div>
         </div>
+        <div class="header-controls">
+            <div class="date-badge">📅 <span id="aktifTarihText">30 Ekim 2026</span></div>
+            <button class="btn-action btn-end-day" onclick="gunuBitir()">⏭️ Günü Bitir</button>
+            <button class="btn-action btn-excel" onclick="excelRaporIndir()">📊 Excel Raporu (Detaylı)</button>
+            <button class="btn-action btn-pdf" onclick="window.print()">📄 Resmi PDF Çıktısı Al</button>
+            <button class="btn-action btn-admin" id="adminBtn" onclick="adminGirisModal()">🔒 Admin Girişi</button>
+        </div>
+    </header>
 
-        <div id="raporAlani"></div>
+    <!-- AKTİF ARIZA UYARI BANDI -->
+    <div id="alarmKutusu">
+        🚨 KRİTİK SIZINTI ALARMI: <span id="alarmDetayText"></span> — İlgili Katın Solenoid Valfi Kilitlendi! Telefona Bildirim Gönderildi. Admin Onayı Bekleniyor!
     </div>
 
-    <script>
-        let gecmisVeriler = {};
-        
-        const DEBI_KLASIK = 0.138; 
-        const DEBI_AKILLI = 0.031; 
-        const ELK_SN = 0.002;      
+    <!-- CANLI TELEMETRİ ŞERİDİ -->
+    <div class="telemetry-bar">
+        <div class="telemetry-left">
+            <div class="pulse-dot"></div>
+            <span>ÇİFT SENSÖRLÜ ÇAPRAZ DOĞRULAMA TELEMETRİSİ</span>
+        </div>
+        <div class="telemetry-pills" id="aktifDurumPills"></div>
+    </div>
 
-        function veriCek() {
-            fetch('/api/durum')
-                .then(response => response.json())
-                .then(data => {
-                    gecmisVeriler = data.gecmis;
-                    document.getElementById('gunSpan').innerText = data.gun;
-                    
-                    let alarmKutusu = document.getElementById('alarmKutusu');
-                    if(data.alarm) {
-                        alarmKutusu.style.display = 'block';
-                        document.getElementById('alarmKonum').innerText = data.alarm_konum;
-                    } else {
-                        alarmKutusu.style.display = 'none';
-                    }
-                    
-                    let aktif = data.aktif;
-                    let isikMetin = aktif.isik ? "💡 AÇIK" : "⚫ KAPALI";
-                    let suMetin = aktif.su ? "🚰 AKIYOR" : "💧 KAPALI";
-                    if(data.alarm) suMetin = "⛔ VALF KESİLDİ";
+    <!-- 3 BİNA CANLI KARTLARI -->
+    <section class="bina-grid" id="binaGrid"></section>
 
-                    document.getElementById('aktifDurum').innerHTML = 
-                        `📍 CANLI KONUM: ${aktif.bina} Binası - Kat ${aktif.kat} | Aydınlatma: ${isikMetin} | Su: ${suMetin}`;
+    <!-- ARIZA DEFTERİ VE ADMİN MÜDAHALE PANELİ -->
+    <section class="section-block">
+        <div class="section-header">
+            <h3>🛠️ Kampüs Tesisat Arıza Defteri & Valf Kontrol Merkezi</h3>
+            <span class="section-hint" id="adminYetkiHint">Yetki Durumu: Standart İzleyici (Arıza onaylamak için sağ üstten Admin Girişi yapın)</span>
+        </div>
+        <div class="ariza-table-wrap">
+            <table class="ariza-table">
+                <colgroup>
+                    <col style="width: 10%;">
+                    <col style="width: 20%;">
+                    <col style="width: 18%;">
+                    <col style="width: 22%;">
+                    <col style="width: 15%;">
+                    <col style="width: 15%;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Arıza No</th>
+                        <th>Tespit Tarihi & Saati</th>
+                        <th>Konum</th>
+                        <th>Arıza Sebebi</th>
+                        <th>Durum</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="arizaTabloBody">
+                    <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Sistemde kayıtlı su kaçağı veya arıza bulunmamaktadır.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-                    let binalarSkor = {};
-                    let maxTasarruf = -1;
-                    let liderBina = "";
+    <!-- 1. GÜNLÜK ÖZET (3 GÜN GÖSTERİR) -->
+    <section class="section-block">
+        <div class="section-header">
+            <h3>📋 Günlük Sürdürülebilirlik Özeti</h3>
+            <span class="section-hint">Ekranda son 3 gün gösterilir • Önceki günler için yukarı kaydırın (<span id="gunSayacText">0</span> Gün Tamamlandı)</span>
+        </div>
+        <div class="gunluk-scroll-viewport" id="gunlukScroll"></div>
+    </section>
 
-                    for(let bina in data.tuketim) {
-                        let hamSuSn = 0; let kurtarilanSuSn = 0; let elkSn = 0;
-                        for(let kat in data.tuketim[bina]) {
-                            hamSuSn += data.tuketim[bina][kat].su_harcanan_sn;
-                            kurtarilanSuSn += data.tuketim[bina][kat].su_kurtarilan_sn;
-                            elkSn += data.tuketim[bina][kat].elektrik_sn;
-                        }
-                        
-                        let harcananLitre = (hamSuSn * DEBI_AKILLI);
-                        let netTasarrufLitre = (kurtarilanSuSn * DEBI_KLASIK); 
-                        let elkTasarruf = (elkSn * ELK_SN);
-                        let toplamTasarrufSkoru = netTasarrufLitre + (elkTasarruf * 10);
-                        
-                        binalarSkor[bina] = {
-                            harcananSu: harcananLitre.toFixed(2),
-                            kurtarilanSu: netTasarrufLitre.toFixed(2),
-                            elkSn: elkSn
-                        };
-                        
-                        if(toplamTasarrufSkoru > maxTasarruf && toplamTasarrufSkoru > 0) {
-                            maxTasarruf = toplamTasarrufSkoru;
-                            liderBina = bina;
-                        }
-                    }
+    <!-- 2. HAFTALIK ÖZET (1 HAFTA GÖSTERİR + GRAFİK) -->
+    <section class="section-block">
+        <div class="section-header">
+            <h3>📊 Haftalık Özet & UI GreenMetric Analizi</h3>
+            <span class="section-hint">Her 7 günde bir otomatik oluşturulur • Haftalar arası geçiş için kaydırın</span>
+        </div>
+        <div class="periyot-scroll-viewport" id="haftalikScroll"></div>
+    </section>
 
-                    let gridHTML = "";
-                    for(let bina in binalarSkor) {
-                        let isLider = (bina === liderBina);
-                        let isAktif = (bina === aktif.bina); // Binanın içinde miyiz kontrolü
-                        
-                        // CSS Class Belirleme
-                        let kartSinifi = "card ";
-                        if(isLider) kartSinifi += "lig-lider ";
-                        if(isAktif) kartSinifi += "aktif-bina ";
+    <!-- 3. AYLIK ÖZET (1 AY GÖSTERİR + GRAFİK) -->
+    <section class="section-block">
+        <div class="section-header">
+            <h3>🗓️ Aylık Özet & Rektörlük Stratejik Projeksiyonu</h3>
+            <span class="section-hint">Her 30 günde bir otomatik oluşturulur • Aylar arası geçiş için kaydırın</span>
+        </div>
+        <div class="periyot-scroll-viewport" id="aylikScroll"></div>
+    </section>
+</div>
 
-                        gridHTML += `
-                            <div class="${kartSinifi}">
-                                ${isLider ? '<div class="lig-rozet">👑 1.</div>' : ''}
-                                ${isAktif ? '<div class="aktif-rozet">📍 BURADASIN</div>' : ''}
-                                <h2>${bina}</h2>
-                                <p style="color:#e94560">Harcanan Su: <b>${binalarSkor[bina].harcananSu} L</b></p>
-                                <p style="color:#00d2ff">Kurtarılan Su: <b>${binalarSkor[bina].kurtarilanSu} L</b></p>
-                                <p style="color:#f39c12">Aktif Işık: <b>${binalarSkor[bina].elkSn} sn</b></p>
-                            </div>
-                        `;
-                    }
-                    document.getElementById('binaGrid').innerHTML = gridHTML;
-                });
+<script>
+    const DEBI_KLASIK = 0.138;
+    const DEBI_AKILLI = 0.031;
+    const DEBI_KACAK = 0.031; // Kaçak anındaki akış hızı (L/sn)
+    const SU_ENERJI_HARCANAN = 0.0014;
+    const SU_ENERJI_KURTARILAN = 0.0045;
+
+    let adminSifreHafiza = "";
+    let sonKayitliGunSayisi = -1;
+    let sonArizaJSON = "";
+    let aktifGrafikler = [];
+    let sonVeriPaketi = null;
+
+    function adminGirisModal() {
+        if (adminSifreHafiza !== "") {
+            adminSifreHafiza = "";
+            document.getElementById('adminBtn').innerText = "🔒 Admin Girişi";
+            document.getElementById('adminBtn').classList.remove('logged-in');
+            document.getElementById('adminYetkiHint').innerText = "Yetki Durumu: Standart İzleyici (Arıza onaylamak için sağ üstten Admin Girişi yapın)";
+            sonArizaJSON = "";
+            veriCek();
+            return;
         }
+        const girilen = prompt("KTÜ Teknik Bakım Admin Şifresini Girin (Varsayılan: ktu2026):");
+        if (!girilen) return;
 
-        setInterval(veriCek, 1000);
-
-        function gunuBitir() {
-            fetch('/api/gun_atla', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    alert(`Gün başarıyla tamamlandı! Sayaçlar sıfırlanarak Gün ${data.yeni_gun} başladı.`);
-                    gecmisiGoster();
-                });
-        }
-
-        function gecmisiGoster() {
-            let rapor = "<h2>🌱 Kampüs Çevresel Etki Raporu</h2>";
-            
-            if(Object.keys(gecmisVeriler).length === 0) {
-                rapor += "<p>Kayıt oluşturmak için önce simülasyonda günü bitirin.</p>";
+        fetch('/api/admin_giris', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sifre: girilen })
+        })
+        .then(res => {
+            if (res.ok) {
+                adminSifreHafiza = girilen;
+                document.getElementById('adminBtn').innerText = "🔓 Admin Aktif (Çıkış)";
+                document.getElementById('adminBtn').classList.add('logged-in');
+                document.getElementById('adminYetkiHint').innerHTML = "<b style='color:#fde047;'>Yetki Durumu: TAM YETKİLİ ADMİN — Arızaları onaylayıp kilitli muslukları açabilirsiniz.</b>";
+                sonArizaJSON = "";
+                veriCek();
+            } else {
+                alert("Hatalı Admin Şifresi! (Şifre: ktu2026)");
             }
+        });
+    }
 
-            for(let gun in gecmisVeriler) {
-                let veri = gecmisVeriler[gun];
-                let gunlukKurtarilanSu = 0;
-                let gunlukKurtarilanElk = 0;
-                
-                for(let bina in veri.tuketim) {
-                    for(let kat in veri.tuketim[bina]) {
-                        let kSn = veri.tuketim[bina][kat].su_kurtarilan_sn;
-                        let eSn = veri.tuketim[bina][kat].elektrik_sn;
-                        
-                        gunlukKurtarilanSu += (kSn * DEBI_KLASIK);
-                        gunlukKurtarilanElk += (eSn * ELK_SN);
-                    }
+    function arizaCoz(id) {
+        if (!adminSifreHafiza) {
+            alert("Arızayı gidermek ve musluk kilidini açmak için önce Admin Girişi yapmalısınız!");
+            return;
+        }
+        fetch('/api/ariza_coz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, sifre: adminSifreHafiza })
+        })
+        .then(res => res.json())
+        .then(() => {
+            sonArizaJSON = "";
+            veriCek();
+        });
+    }
+
+    function gunHesapla(gunVerisi) {
+        let binaDetay = {};
+        let topSuH = 0, topSuK = 0, topSuC = 0, topElkH = 0, topElkK = 0;
+
+        for (let b of ["YAZILIM", "EHM", "INSAAT"]) {
+            let suHSn = 0, suKSn = 0, kacakSn = 0;
+            for (let k of [1, 2, 3]) {
+                suHSn += gunVerisi.tuketim[b][k].su_harcanan_sn;
+                suKSn += gunVerisi.tuketim[b][k].su_kurtarilan_sn;
+                kacakSn += gunVerisi.tuketim[b][k].kacak_sn;
+            }
+            let suH = suHSn * DEBI_AKILLI;
+            let suK = suKSn * DEBI_KLASIK;
+            let suC = kacakSn * DEBI_KACAK;
+            let elkH = (suHSn + kacakSn) * SU_ENERJI_HARCANAN;
+            let elkK = suKSn * SU_ENERJI_KURTARILAN;
+
+            binaDetay[b] = { suH, suK, suC, elkH, elkK };
+            topSuH += suH; topSuK += suK; topSuC += suC; topElkH += elkH; topElkK += elkK;
+        }
+
+        return {
+            tarih: gunVerisi.tarih,
+            binalar: binaDetay,
+            toplam: { suH: topSuH, suK: topSuK, suC: topSuC, elkH: topElkH, elkK: topElkK }
+        };
+    }
+
+    function veriCek() {
+        fetch('/api/durum')
+            .then(res => res.json())
+            .then(data => {
+                sonVeriPaketi = data;
+                document.getElementById('aktifTarihText').innerText = data.aktif_tarih;
+
+                const aktifArizalar = data.ariza_defteri.filter(a => !a.cozuldu);
+                const alarmEl = document.getElementById('alarmKutusu');
+                if (aktifArizalar.length > 0) {
+                    alarmEl.style.display = 'block';
+                    const konumlar = aktifArizalar.map(a => `${a.bina} Kat ${a.kat} (#${a.id})`).join(', ');
+                    document.getElementById('alarmDetayText').innerText = konumlar;
+                } else {
+                    alarmEl.style.display = 'none';
                 }
 
-                let agacSayisi = (gunlukKurtarilanSu / 25).toFixed(1);
-                let telefonSarji = (gunlukKurtarilanElk / 0.015).toFixed(0);
+                const a = data.aktif;
+                let muslukDurum = a.el ? "🚰 AÇIK (El Algılandı)" : "💧 KAPALI";
+                if (a.kilitli) muslukDurum = "⛔ ARIZA KİLİTLİ";
+                const akisDurum = (a.el === 0 && a.akis === 1) ? "⚠️ KAÇAK AKIŞ!" : (a.akis ? "🌊 Su Akışı Var" : "✅ Akış Yok");
 
-                rapor += `<div style="background:#1a1a2e; padding:20px; border-radius:10px; margin-bottom:20px; border-left: 5px solid #00d2ff;">
-                    <h3 style="color:#e94560; margin-top:0;">📅 ${gun}. GÜN ÖZETİ</h3>
-                    <p class="metafor-text">
-                        Bugün YALNIZCA "Sabunlama Boşluğu" davranış analizi ile kampüs genelinde <span class="tasarruf-vurgu">${gunlukKurtarilanSu.toFixed(1)} Litre</span> su kurtarıldı.<br>
-                        🌳 <i>Bu miktar, yaklaşık <b>${agacSayisi} fidanın</b> haftalık su ihtiyacına eşdeğerdir.</i>
-                    </p>
-                    <p class="metafor-text">
-                        Aydınlatma sensörleriyle <span class="tasarruf-vurgu">${gunlukKurtarilanElk.toFixed(3)} kWh</span> enerji tasarrufu sağlandı.<br>
-                        📱 <i>Bu enerji ile <b>${telefonSarji} adet akıllı telefon</b> tam şarj edilebilir.</i>
-                    </p>
-                    <div style="margin-top:15px; font-weight:bold; color:#ffd700;">Günün Şampiyonu: ${veri.en_tasarruflu} Fakültesi</div>
-                </div>`;
-            }
+                document.getElementById('aktifDurumPills').innerHTML = `
+                    <div class="t-pill">📍 Aktif Sensör: ${a.bina} - Kat ${a.kat}</div>
+                    <div class="t-pill">🖐️ El Sensörü: ${muslukDurum}</div>
+                    <div class="t-pill">🌊 Akış Sensörü: ${akisDurum}</div>
+                `;
 
-            let alan = document.getElementById('raporAlani');
-            alan.innerHTML = rapor;
-            alan.style.display = 'block';
+                let binalarAnlik = {};
+                for (let b of ["YAZILIM", "EHM", "INSAAT"]) {
+                    let suHSn = 0, suKSn = 0, kacakSn = 0;
+                    for (let k of [1, 2, 3]) {
+                        suHSn += data.tuketim[b][k].su_harcanan_sn;
+                        suKSn += data.tuketim[b][k].su_kurtarilan_sn;
+                        kacakSn += data.tuketim[b][k].kacak_sn;
+                    }
+                    let suH = suHSn * DEBI_AKILLI;
+                    let suK = suKSn * DEBI_KLASIK;
+                    let suC = kacakSn * DEBI_KACAK;
+                    let elkH = (suHSn + kacakSn) * SU_ENERJI_HARCANAN;
+                    let elkK = suKSn * SU_ENERJI_KURTARILAN;
+
+                    binalarAnlik[b] = { suH, suK, suC, elkH, elkK };
+                }
+
+                let binaHTML = "";
+                for (let b of ["YAZILIM", "EHM", "INSAAT"]) {
+                    const binaArizaliMi = aktifArizalar.some(x => x.bina === b);
+                    const m = binalarAnlik[b];
+
+                    binaHTML += `
+                        <div class="bina-card">
+                            <div class="bina-header">
+                                <h2>${b} BİNASI</h2>
+                                <div class="badge-group">
+                                    ${binaArizaliMi ? '<span class="badge-tag b-ariza">🔒 VALF KİLİTLİ</span>' : ''}
+                                </div>
+                            </div>
+                            <div class="metric-grid">
+                                <div class="metric-box m-su-h">
+                                    <span class="metric-label">Harcanan Su</span>
+                                    <span class="metric-val" style="color:var(--su-harcanan)">${m.suH.toFixed(2)} L</span>
+                                </div>
+                                <div class="metric-box m-su-k">
+                                    <span class="metric-label">Kurtarılan Su</span>
+                                    <span class="metric-val" style="color:var(--su-kurtarilan)">${m.suK.toFixed(2)} L</span>
+                                </div>
+                                <div class="metric-box m-su-c">
+                                    <span class="metric-label">İsraf/Kaçak Su</span>
+                                    <span class="metric-val" style="color:var(--su-kacak)">${m.suC.toFixed(2)} L</span>
+                                </div>
+                                <div class="metric-box m-elk-h">
+                                    <span class="metric-label">Pompa Enerjisi</span>
+                                    <span class="metric-val" style="color:var(--elk-harcanan)">${m.elkH.toFixed(3)} kWh</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                document.getElementById('binaGrid').innerHTML = binaHTML;
+
+                const guncelArizaStr = JSON.stringify(data.ariza_defteri) + adminSifreHafiza;
+                if (guncelArizaStr !== sonArizaJSON) {
+                    sonArizaJSON = guncelArizaStr;
+                    arizaTablosuCiz(data.ariza_defteri);
+                }
+
+                if (data.gecmis.length !== sonKayitliGunSayisi) {
+                    sonKayitliGunSayisi = data.gecmis.length;
+                    ozetleriVeGrafikleriCiz(data.gecmis);
+                }
+            });
+    }
+
+    function arizaTablosuCiz(liste) {
+        const tbody = document.getElementById('arizaTabloBody');
+        if (liste.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Sistemde kayıtlı su kaçağı veya arıza bulunmamaktadır.</td></tr>`;
+            return;
         }
-    </script>
+        tbody.innerHTML = liste.map(a => `
+            <tr>
+                <td style="font-family:'JetBrains Mono'; font-weight:700; color:#38bdf8;">#${a.id}</td>
+                <td>${a.tarih}</td>
+                <td><b>${a.bina} - ${a.kat}. Kat</b></td>
+                <td>${a.sebep}</td>
+                <td><span class="${a.cozuldu ? 'status-pill-resolved' : 'status-pill-active'}">${a.durum}</span></td>
+                <td>
+                    ${a.cozuldu
+                        ? '<span style="color:#10b981; font-weight:700;">✔ Çözüldü</span>'
+                        : `<button class="btn-resolve" ${adminSifreHafiza ? '' : 'disabled'} onclick="arizaCoz(${a.id})">
+                            ${adminSifreHafiza ? '✅ Gider & Aç' : '🔒 Admin'}
+                           </button>`
+                    }
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function gunuBitir() {
+        fetch('/api/gun_atla', { method: 'POST' })
+            .then(res => res.json())
+            .then(() => veriCek());
+    }
+
+    function ozetleriVeGrafikleriCiz(gecmis) {
+        aktifGrafikler.forEach(g => g.destroy());
+        aktifGrafikler = [];
+
+        const gunSayisi = gecmis.length;
+        document.getElementById('gunSayacText').innerText = gunSayisi;
+        const islenmisGunler = gecmis.map(g => gunHesapla(g));
+
+        const gunlukEl = document.getElementById('gunlukScroll');
+        if (gunSayisi === 0) {
+            gunlukEl.innerHTML = `
+                <div class="empty-state">
+                    <h4>Henüz Tamamlanmış Bir Gün Yok</h4>
+                    <p><b>"Günü Bitir"</b> butonuna bastığınızda YÖK özeti burada listelenecektir.</p>
+                </div>`;
+        } else {
+            gunlukEl.innerHTML = islenmisGunler.map(g => {
+                const agac = (g.toplam.suK / 15).toFixed(1);
+                return `
+                    <div class="gunluk-card">
+                        <div class="summary-left">
+                            <div class="date-title-row">
+                                <span class="date-title">📅 ${g.tarih}</span>
+                            </div>
+                            <div class="metaphor-list">
+                                <div class="metaphor-item">
+                                    🌳 <b>${g.toplam.suK.toFixed(2)} L Su Kurtarıldı:</b> <b>${agac} fidanın</b> su ihtiyacı karşılandı.
+                                </div>
+                                <div class="metaphor-item">
+                                    🚨 <b>Toplam Kaçak/İsraf:</b> ${g.toplam.suC.toFixed(2)} Litre kaçak su harcandı.
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <table class="bina-mini-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bina</th>
+                                        <th style="color:var(--su-harcanan)">Harcanan</th>
+                                        <th style="color:var(--su-kurtarilan)">Kurtarılan</th>
+                                        <th style="color:var(--su-kacak)">İsraf/Kaçak</th>
+                                        <th style="color:var(--elk-kurtarilan)">GreenMetric Elk.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${["YAZILIM", "EHM", "INSAAT"].map(b => `
+                                        <tr>
+                                            <td style="color:#fff">${b}</td>
+                                            <td style="color:var(--su-harcanan)">${g.binalar[b].suH.toFixed(2)} L</td>
+                                            <td style="color:var(--su-kurtarilan)">${g.binalar[b].suK.toFixed(2)} L</td>
+                                            <td style="color:var(--su-kacak)">${g.binalar[b].suC.toFixed(2)} L</td>
+                                            <td style="color:var(--elk-kurtarilan)">${g.binalar[b].elkK.toFixed(3)} kWh</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            setTimeout(() => { gunlukEl.scrollTop = gunlukEl.scrollHeight; }, 60);
+        }
+
+        periyotOlustur(islenmisGunler, 7, 'haftalikScroll', 'haftaChart');
+        periyotOlustur(islenmisGunler, 30, 'aylikScroll', 'ayChart');
+    }
+
+    function periyotOlustur(islenmisGunler, periyotGunSayisi, containerId, chartPrefix) {
+        const container = document.getElementById(containerId);
+        const tamamlananPeriyotSayisi = Math.floor(islenmisGunler.length / periyotGunSayisi);
+        const mevcutIlerleme = islenmisGunler.length % periyotGunSayisi;
+
+        if (tamamlananPeriyotSayisi === 0) {
+            const yuzde = Math.round((mevcutIlerleme / periyotGunSayisi) * 100);
+            const etiket = periyotGunSayisi === 7 ? "Haftalık" : "Aylık";
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h4>${etiket} Özet ve Sütun Grafiği İçin Veri Toplanıyor (${mevcutIlerleme} / ${periyotGunSayisi} Gün)</h4>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${yuzde}%"></div></div>
+                    <p><b>${periyotGunSayisi - mevcutIlerleme} gün</b> sonra rapor oluşacaktır.</p>
+                </div>`;
+            return;
+        }
+
+        let html = "";
+        let chartDataList = [];
+
+        for (let p = 0; p < tamamlananPeriyotSayisi; p++) {
+            const dilim = islenmisGunler.slice(p * periyotGunSayisi, (p + 1) * periyotGunSayisi);
+            const baslangicTarih = dilim[0].tarih;
+            const bitisTarih = dilim[dilim.length - 1].tarih;
+
+            let bToplam = {
+                "YAZILIM": { suH: 0, suK: 0, suC: 0, elkH: 0, elkK: 0 },
+                "EHM": { suH: 0, suK: 0, suC: 0, elkH: 0, elkK: 0 },
+                "INSAAT": { suH: 0, suK: 0, suC: 0, elkH: 0, elkK: 0 }
+            };
+            let genelSuK = 0, genelSuC = 0, genelElkK = 0;
+
+            dilim.forEach(g => {
+                genelSuK += g.toplam.suK;
+                genelSuC += g.toplam.suC;
+                genelElkK += g.toplam.elkK;
+                for (let b of ["YAZILIM", "EHM", "INSAAT"]) {
+                    bToplam[b].suH += g.binalar[b].suH;
+                    bToplam[b].suK += g.binalar[b].suK;
+                    bToplam[b].suC += g.binalar[b].suC;
+                    bToplam[b].elkH += g.binalar[b].elkH;
+                    bToplam[b].elkK += g.binalar[b].elkK;
+                }
+            });
+
+            const canvasId = `${chartPrefix}_${p}`;
+
+            html += `
+                <div class="periyot-card">
+                    <div class="periyot-top-grid">
+                        <div class="summary-left">
+                            <div class="date-title-row">
+                                <span class="date-title">📆 ${baslangicTarih} – ${bitisTarih}</span>
+                            </div>
+                            <div class="metaphor-list">
+                                <div class="metaphor-item">
+                                    🌳 <b>Toplam ${genelSuK.toFixed(2)} L</b> Kurtarıldı | <b>🚨 ${genelSuC.toFixed(2)} L</b> İsraf/Kaçak Su Tespit Edildi.
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <table class="bina-mini-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bina (${periyotGunSayisi} Gün)</th>
+                                        <th style="color:var(--su-harcanan)">Harcanan</th>
+                                        <th style="color:var(--su-kurtarilan)">Kurtarılan</th>
+                                        <th style="color:var(--su-kacak)">İsraf/Kaçak</th>
+                                        <th style="color:var(--elk-kurtarilan)">GreenMetric</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${["YAZILIM", "EHM", "INSAAT"].map(b => `
+                                        <tr>
+                                            <td style="color:#fff">${b}</td>
+                                            <td style="color:var(--su-harcanan)">${bToplam[b].suH.toFixed(2)} L</td>
+                                            <td style="color:var(--su-kurtarilan)">${bToplam[b].suK.toFixed(2)} L</td>
+                                            <td style="color:var(--su-kacak)">${bToplam[b].suC.toFixed(2)} L</td>
+                                            <td style="color:var(--elk-kurtarilan)">${bToplam[b].elkK.toFixed(3)} kWh</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper"><canvas id="${canvasId}"></canvas></div>
+                </div>
+            `;
+
+            chartDataList.push({
+                canvasId: canvasId,
+                labels: dilim.map(d => d.tarih),
+                suH: dilim.map(d => Number(d.toplam.suH.toFixed(2))),
+                suK: dilim.map(d => Number(d.toplam.suK.toFixed(2))),
+                suC: dilim.map(d => Number(d.toplam.suC.toFixed(2))),
+                elkK: dilim.map(d => Number(d.toplam.elkK.toFixed(3)))
+            });
+        }
+
+        container.innerHTML = html;
+
+        chartDataList.forEach(c => {
+            const ctx = document.getElementById(c.canvasId).getContext('2d');
+            const newChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: c.labels,
+                    datasets: [
+                        { label: 'Harcanan Su (L)', data: c.suH, backgroundColor: '#f43f5e', borderRadius: 4, yAxisID: 'y' },
+                        { label: 'Kurtarılan Su (L)', data: c.suK, backgroundColor: '#06b6d4', borderRadius: 4, yAxisID: 'y' },
+                        { label: 'İsraf/Kaçak Su (L)', data: c.suC, backgroundColor: '#ec4899', borderRadius: 4, yAxisID: 'y' },
+                        { label: 'GreenMetric Enerji (kWh)', data: c.elkK, backgroundColor: '#10b981', borderRadius: 4, yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { labels: { color: '#e2e8f0', font: { size: 11 } } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+                        y: { type: 'linear', position: 'left', title: { display: true, text: 'Su (Litre)', color: '#06b6d4' }, ticks: { color: '#94a3b8' } },
+                        y1: { type: 'linear', position: 'right', title: { display: true, text: 'Enerji (kWh)', color: '#10b981' }, ticks: { color: '#94a3b8' }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+            aktifGrafikler.push(newChart);
+        });
+
+        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 80);
+    }
+
+    // ÇOK DETAYLI VE DÜZGÜN EXCEL RAPORU (.CSV)
+    function excelRaporIndir() {
+        if (!sonVeriPaketi) return;
+        let csv = "\uFEFFKTÜ OF TEKNOLOJİ FAKÜLTESİ - YÖK & UI GREENMETRIC DETAYLI SÜRDÜRÜLEBİLİRLİK VE SU MUHASEBESİ RAPORU\n";
+        csv += "Rapor Oluşturma Tarihi: " + new Date().toLocaleString() + "\n\n";
+        csv += "GÜNLÜK BİNA BAZLI TÜKETİM VE İSRAF/KAÇAK TABLOSU\n";
+        csv += "Tarih;Bina Adı;Harcanan Su (L);Kurtarılan Su (L);İsraf/Kaçak Su (L);Harcanan Pompa Enerjisi (kWh);GreenMetric Kazanılan Enerji (kWh);Önlenen Karbon (g CO2e)\n";
+
+        const gunler = sonVeriPaketi.gecmis.map(g => gunHesapla(g));
+        gunler.forEach(g => {
+            for (let b of ["YAZILIM", "EHM", "INSAAT"]) {
+                const m = g.binalar[b];
+                const co2 = (m.elkK * 420).toFixed(2);
+                csv += `${g.tarih};${b};${m.suH.toFixed(2)};${m.suK.toFixed(2)};${m.suC.toFixed(2)};${m.elkH.toFixed(3)};${m.elkK.toFixed(3)};${co2}\n`;
+            }
+        });
+
+        csv += "\n\nKAMPÜS TESİSAT ARIZA VE KAÇAK MÜDAHALE DEFTERİ\n";
+        csv += "Arıza No;Tespit Tarihi;Bina;Kat;Arıza Sebebi;Valf/Sistem Durumu;Çözüm Saati\n";
+        sonVeriPaketi.ariza_defteri.forEach(a => {
+            csv += `#${a.id};${a.tarih};${a.bina};${a.kat};"${a.sebep}";${a.durum};${a.cozum_zamani}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "KTU_GreenMetric_Detayli_Su_ve_Kacak_Raporu.csv";
+        link.click();
+    }
+
+    setInterval(veriCek, 1000);
+    veriCek();
+</script>
 </body>
 </html>
