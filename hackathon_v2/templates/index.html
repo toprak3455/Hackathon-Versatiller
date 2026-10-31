@@ -1,0 +1,1265 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Kampüs Su, Enerji &amp; Kaçak Yönetimi — {{ kurum }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<style>
+{% raw %}
+:root{
+  --bg:#070b14;--card:#0f172a;--card-2:#0b1324;--line:#1e293b;--line-2:#263449;
+  --text:#e2e8f0;--muted:#94a3b8;--faint:#64748b;
+  --water:#38bdf8;--saved:#34d399;--waste:#f87171;--energy:#fbbf24;
+  --accent:#3b82f6;--accent-2:#2563eb;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;
+  --r:12px;--mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --day-h:214px;--gap:12px;--week-h:calc(var(--day-h)*3 + var(--gap)*2);--month-h:480px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+.ic{flex:none;display:block}
+.ii{display:inline-flex;align-items:center}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.sm{font-size:12px}
+.print-only{display:none}
+.c-water{color:var(--water)}.c-saved{color:var(--saved)}.c-waste{color:var(--waste)}.c-energy{color:var(--energy)}
+.wrap{max-width:1440px;margin:0 auto;padding:0 24px}
+
+/* ── Üst bar ── */
+.topbar{position:sticky;top:0;z-index:20;background:rgba(7,11,20,.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1440px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px 16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-mark{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none;background:rgba(56,189,248,.1);color:var(--water);border:1px solid rgba(56,189,248,.22)}
+.brand h1{margin:0;font-size:16px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+.brand p{margin:0;font-size:12px;color:var(--muted)}
+.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.date-badge{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;background:var(--card);border:1px solid var(--line-2);font-weight:500;white-space:nowrap}
+.date-badge .gn{font:600 11px/1 var(--mono);color:var(--water);background:rgba(56,189,248,.1);padding:4px 6px;border-radius:5px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--line-2);background:var(--card);color:var(--text);font-weight:500;font-size:13px;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
+.btn:hover{background:#15203a;border-color:#334155}
+.btn:focus-visible,.tab:focus-visible,.floor:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-sm{height:28px;padding:0 10px;font-size:12px;border-radius:7px;gap:6px}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-2);border-color:var(--accent-2)}
+.btn-ok{background:#15803d;border-color:#15803d;color:#fff}
+.btn-ok:hover{background:#166534;border-color:#166534}
+.btn-fix{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.35);color:#86efac}
+.btn-fix:hover{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.5)}
+.btn-warn{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.35);color:#fca5a5}
+.btn-warn:hover{background:rgba(239,68,68,.15)}
+.btn-admin-on{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.4);color:#bbf7d0}
+.btn-admin-on:hover{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.55)}
+
+/* ── Telemetri şeridi ── */
+.tele{margin-top:16px;display:flex;align-items:center;flex-wrap:wrap;gap:10px 18px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px 16px}
+.tele-live{display:flex;align-items:center;gap:10px;font:600 11px/1 var(--mono);letter-spacing:.08em;color:var(--saved);padding-right:20px;border-right:1px solid var(--line);white-space:nowrap}
+.tele-live.leak{color:var(--danger)}
+.tele-live.off{color:var(--faint)}
+.pulse{position:relative;width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
+.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid currentColor;animation:ping 1.6s cubic-bezier(0,0,.2,1) infinite}
+.tele-live.off .pulse::after{animation:none;opacity:0}
+@keyframes ping{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.6);opacity:0}}
+.ti{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);white-space:nowrap}
+.ti b{color:var(--text);font-weight:600}
+.ti .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600}
+.leakbar{width:80px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.leakbar i{display:block;height:100%;width:0;background:var(--danger);transition:width .45s linear}
+.tele-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+.tag{display:inline-block;font:600 10.5px/1.4 var(--mono);padding:2px 6px;border-radius:5px;background:var(--line);color:var(--muted);white-space:nowrap}
+.tag.live{background:rgba(56,189,248,.12);color:var(--water)}
+
+/* ── Durum çipleri ── */
+.chip{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap;border:1px solid transparent;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.s-idle{color:#94a3b8;background:rgba(148,163,184,.07);border-color:rgba(148,163,184,.18)}
+.s-use{color:#7dd3fc;background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.28)}
+.s-flow{color:#6ee7b7;background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.28)}
+.s-warn{color:#fcd34d;background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3)}
+.s-leak{color:#fca5a5;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.38)}
+.s-lock{color:#fff;background:#b91c1c;border-color:#b91c1c}
+.s-ok{color:#86efac;background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3)}
+
+/* ── Izgara ── */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px auto 20px}
+.span-2{grid-column:span 2}
+.span-3{grid-column:1/-1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px 12px;margin-bottom:14px;flex-wrap:wrap}
+.card-h h2{margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.card-h h2 .ic{color:var(--muted)}
+.card-h p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+
+/* ── KPI ── */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi-l{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);white-space:nowrap}
+.kpi-i{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none}
+.bg-water{background:rgba(56,189,248,.12)}.bg-saved{background:rgba(52,211,153,.12)}.bg-waste{background:rgba(248,113,113,.12)}.bg-energy{background:rgba(251,191,36,.12)}.bg-co2{background:rgba(148,163,184,.12)}
+.kpi-v{font:600 22px/1.15 var(--mono);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-v small{font:500 12px Inter,sans-serif;color:var(--muted);margin-left:4px;letter-spacing:0}
+.kpi-s{font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Bina kartları ── */
+.buildings{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.bcard-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.bt{display:flex;align-items:center;gap:10px;min-width:0}
+.bicon{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:none;background:var(--card-2);border:1px solid var(--line-2);color:var(--muted)}
+.bt h3{margin:0;font:600 14px/1.2 var(--mono);letter-spacing:.05em}
+.bt p{margin:2px 0 0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-width:0}
+.ml{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.mv{font:600 19px/1.25 var(--mono);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv small{font:500 11.5px Inter,sans-serif;color:var(--muted);margin-left:3px}
+.ms{font-size:11px;color:var(--faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.floors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.floor{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:9px 10px;border-radius:10px;background:transparent;border:1px solid var(--line);cursor:pointer;text-align:left;min-width:0;transition:border-color .15s,background .15s}
+.floor:hover{background:var(--card-2)}
+.floor.sel{border-color:rgba(59,130,246,.65);background:rgba(59,130,246,.06)}
+.floor.locked{border-color:rgba(239,68,68,.5)}
+.fl-top{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:12px;gap:4px}
+.src{font:600 9.5px/1 var(--mono);color:var(--faint);letter-spacing:.05em}
+.floor .chip{height:20px;font-size:10.5px;padding:0 6px}
+.fl-sens{display:flex;gap:9px;font-size:10.5px;color:var(--faint)}
+.fl-sens span{display:inline-flex;align-items:center;gap:4px}
+.dot{width:7px;height:7px;border-radius:50%;background:#334155;flex:none}
+.dot.el-on{background:var(--water)}.dot.ak-on{background:var(--saved)}.dot.ak-bad{background:var(--danger)}
+.fl-bar{width:100%;height:3px;border-radius:2px;background:var(--line);overflow:hidden}
+.fl-bar i{display:block;height:100%;width:0;background:var(--danger);transition:width .45s linear}
+.bcard-f{display:flex;justify-content:space-between;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+.bcard-f b{color:var(--text);font-family:var(--mono);font-weight:600}
+
+/* ── Arıza defteri ── */
+.tabs{display:inline-flex;background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:3px;gap:2px}
+.tab{border:0;background:transparent;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab.on{background:var(--line-2);color:var(--text)}
+.tab .n{font-family:var(--mono);margin-left:5px;opacity:.85}
+.table-wrap{border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:384px;scrollbar-width:thin;scrollbar-color:#334155 transparent}
+table.ledger{width:100%;min-width:780px;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.ledger th{position:sticky;top:0;z-index:1;background:var(--card-2);text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ledger td{padding:9px 10px;border-bottom:1px solid var(--line);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:1.4}
+.ledger td .l2{display:block;font-size:11px;color:var(--faint);overflow:hidden;text-overflow:ellipsis}
+.ledger td .l2.mono{font-family:var(--mono)}
+.ledger tbody tr:last-child td{border-bottom:0}
+.ledger tbody tr:hover td{background:rgba(148,163,184,.04)}
+.ledger tr.r-active td{background:rgba(239,68,68,.045)}
+.ledger .num{text-align:right;font-family:var(--mono)}
+.ledger td .sub{color:var(--faint);margin-left:6px;font-family:var(--mono);font-size:11.5px}
+.empty{padding:28px 12px;text-align:center;color:var(--faint);font-size:13px}
+.ntfy-ok{color:#86efac}.ntfy-bad{color:#fca5a5}.ntfy-wait{color:#fcd34d}
+
+/* ── Simülatör ── */
+.sim-grid{display:grid;gap:14px}
+.field>label,.field>.lbl{display:block;font-size:11.5px;color:var(--muted);margin-bottom:6px;font-weight:500}
+select{height:36px;width:100%;background:var(--card-2);border:1px solid var(--line-2);border-radius:8px;padding:0 10px;cursor:pointer}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--card-2);border:1px solid var(--line-2);border-radius:8px;padding:3px}
+.seg button{height:28px;border:0;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;font-size:12.5px}
+.seg button.on{background:var(--line-2);color:var(--text)}
+.sens{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sens-btn{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px;border-radius:10px;border:1px solid var(--line-2);background:var(--card-2);cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.sens-btn:hover{border-color:#334155}
+.sens-btn .sl{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+.sens-btn b{font:600 14px var(--mono)}
+.sens-btn.on-el{border-color:rgba(56,189,248,.45);background:rgba(56,189,248,.07)}
+.sens-btn.on-el b{color:var(--water)}
+.sens-btn.on-ak{border-color:rgba(52,211,153,.45);background:rgba(52,211,153,.07)}
+.sens-btn.on-ak b{color:var(--saved)}
+.sim-state{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:10px;background:var(--card-2);border:1px solid var(--line);font-size:12px;color:var(--muted)}
+.sim-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sim-btns .btn,#simMusluk{width:100%}
+.auto-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.switch{position:relative;display:inline-block;width:38px;height:22px;flex:none}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;border-radius:11px;background:#334155;transition:background .2s;cursor:pointer}
+.switch span::before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--accent)}
+.switch input:checked+span::before{transform:translateX(16px)}
+.switch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+code.api{display:block;font:11px/1.55 var(--mono);background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:9px 10px;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.note{font-size:11.5px;color:var(--faint);margin:0}
+
+/* ── Scroll-snap özet panelleri ── */
+.snap{overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#334155 transparent}
+.snap::-webkit-scrollbar,.table-wrap::-webkit-scrollbar{width:6px;height:6px}
+.snap::-webkit-scrollbar-thumb,.table-wrap::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+#gunlukSnap{height:var(--week-h);display:flex;flex-direction:column;gap:var(--gap);padding-right:4px}
+.day{flex:0 0 var(--day-h);height:var(--day-h);scroll-snap-align:start;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.day.live{border-color:rgba(56,189,248,.35)}
+.day-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;white-space:nowrap}
+.day-h b{overflow:hidden;text-overflow:ellipsis}
+.day-tags{display:flex;gap:4px;flex:none}
+.day-meta{display:flex;gap:12px;font-size:11.5px;color:var(--muted);overflow:hidden;white-space:nowrap}
+.mm{display:inline-flex;align-items:center;gap:5px}
+.mm b{color:var(--text);font-family:var(--mono);font-weight:600}
+.mm.tree .ic{color:var(--saved)}.mm.co2 .ic{color:var(--water)}.mm.lk .ic{color:var(--waste)}
+table.mini{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11.5px}
+.mini col.c1{width:23%}
+.mini th{font-weight:500;color:var(--faint);text-align:right;padding:3px 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini td{padding:3px 4px;text-align:right;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini th:first-child,.mini td:first-child{text-align:left}
+.mini td:first-child{font-weight:600;font-size:11px;letter-spacing:.02em}
+.mini tr.tot td{border-top:1px solid var(--line);color:var(--text);font-weight:600}
+.mini td.v-s{color:var(--saved)}.mini td.v-w{color:var(--waste)}
+
+#haftaSnap{height:var(--week-h);display:flex;flex-direction:column}
+#aySnap{height:var(--month-h);display:flex;flex-direction:column}
+.page{flex:0 0 100%;height:100%;scroll-snap-align:start;display:flex;flex-direction:column;gap:10px;padding:2px 2px 14px;min-height:0}
+.page+.page{border-top:1px dashed var(--line-2);padding-top:14px}
+.page-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.page-h .rng{color:var(--muted);margin-left:6px}
+.chart-box{position:relative;flex:1 1 auto;min-height:0}
+.chart-box canvas{position:absolute;inset:0}
+.chart-fallback{position:absolute;inset:0;display:grid;place-items:center;color:var(--faint);font-size:12px;text-align:center;padding:12px;border:1px dashed var(--line-2);border-radius:10px}
+.page-sum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.ps{background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.ps span{display:block;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps b{display:block;font:600 13.5px/1.4 var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps i{display:block;font-style:normal;font-size:10.5px;color:var(--saved);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.month-body{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(270px,1fr);gap:14px;flex:1 1 auto;min-height:0}
+.proj{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow:auto;font-size:12.5px;scrollbar-width:thin;scrollbar-color:#334155 transparent}
+.proj h4{margin:0 0 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.proj dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;margin:0 0 12px}
+.proj dt{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj dd{margin:0;font-family:var(--mono);text-align:right;white-space:nowrap}
+.proj .hl{color:var(--saved)}
+.proj-note{margin:0;font-size:11px;color:var(--faint);line-height:1.45}
+
+footer.foot{max-width:1440px;margin:0 auto 28px;padding:0 24px;font-size:11.5px;color:var(--faint);display:flex;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
+
+/* ── Modal & bildirim ── */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(2,6,23,.72);display:none;align-items:center;justify-content:center;padding:16px}
+.modal.open{display:flex}
+.modal-card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line-2);border-radius:14px;padding:20px}
+.modal-card h3{margin:0 0 4px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.modal-card p{margin:0 0 16px;font-size:13px;color:var(--muted);line-height:1.55}
+.modal-card p b{color:var(--text)}
+.modal-card input{width:100%;height:40px;background:var(--card-2);border:1px solid var(--line-2);border-radius:8px;padding:0 12px;outline:none}
+.modal-card input:focus{border-color:var(--accent)}
+.modal-err{min-height:18px;margin:8px 0 0;font-size:12px;color:#fca5a5}
+.modal-act{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.toasts{position:fixed;right:16px;bottom:16px;z-index:70;display:flex;flex-direction:column;gap:8px;max-width:min(380px,calc(100vw - 32px))}
+.toast{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;background:var(--card);border:1px solid var(--line-2);font-size:13px;line-height:1.45;animation:tin .2s ease-out}
+.toast.t-danger{border-color:rgba(239,68,68,.5)}.toast.t-danger .ic{color:var(--danger)}
+.toast.t-ok{border-color:rgba(34,197,94,.45)}.toast.t-ok .ic{color:var(--ok)}
+.toast.t-info .ic{color:var(--water)}
+.toast.out{opacity:0;transform:translateY(6px);transition:all .25s}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── Duyarlı düzen ── */
+@media (max-width:1280px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .span-2,.span-3{grid-column:auto}
+}
+@media (max-width:720px){
+  :root{--day-h:226px;--month-h:800px}
+  .wrap,.topbar-in,footer.foot{padding-left:16px;padding-right:16px}
+  .topbar{position:static}
+  .brand h1{white-space:normal}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .buildings{grid-template-columns:minmax(0,1fr)}
+  .tele-live{border-right:0;padding-right:0;width:100%}
+  .tele-right{margin-left:0}
+  .page-sum{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .month-body{grid-template-columns:minmax(0,1fr);grid-template-rows:280px minmax(0,1fr)}
+  .day-meta{gap:10px}
+}
+
+/* ── Resmi PDF çıktısı (window.print) ── */
+@media print{
+  @page{size:A4 portrait;margin:12mm}
+  :root{color-scheme:light;--bg:#fff;--card:#fff;--card-2:#f8fafc;--line:#cbd5e1;--line-2:#cbd5e1;--text:#0f172a;--muted:#475569;--faint:#64748b;--week-h:auto;--month-h:auto}
+  html,body{background:#fff!important;color:#0f172a;font-size:11px}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .no-print,.topbar,.tele-wrap,#simKart,.modal,.toasts,.tabs,.ledger td:last-child,.ledger th:last-child,footer.foot{display:none!important}
+  .print-only{display:block!important}
+  .wrap{padding:0;max-width:none}
+  .grid{display:block;margin:0}
+  .grid>*{margin-bottom:10px}
+  .card,.kpi,.metric,.day,.ps,.proj{break-inside:avoid;page-break-inside:avoid}
+  .kpis{grid-template-columns:repeat(3,1fr);gap:8px}
+  .buildings{grid-template-columns:repeat(3,1fr);gap:8px}
+  .s-lock{color:#b91c1c;background:#fee2e2;border-color:#fca5a5}
+  .table-wrap{max-height:none;overflow:visible}
+  table.ledger{min-width:0}
+  table.ledger col:last-child{width:0}
+  .snap,#gunlukSnap,#haftaSnap,#aySnap{height:auto!important;overflow:visible!important;display:block}
+  .day{height:auto;margin-bottom:8px}
+  .page{height:auto;display:block;padding:8px 0}
+  .page>*{margin-bottom:8px}
+  .chart-box{height:240px}
+  .month-body{display:block}
+  .month-body .chart-box{margin-bottom:8px}
+  .print-head{border-bottom:2px solid #0f172a;padding-bottom:10px;margin-bottom:12px}
+  .ph-top{display:flex;justify-content:space-between;gap:16px}
+  .ph-kurum{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  .ph-title{font-size:16px;font-weight:700;margin-top:2px}
+  .ph-sub{font-size:10.5px;color:#475569}
+  .ph-meta{font-size:10.5px;text-align:right;line-height:1.6}
+  .print-sign{margin-top:28px;break-inside:avoid}
+  .print-sign .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:10px}
+  .print-sign .sg div{border-top:1px solid #0f172a;padding-top:6px;font-size:10.5px;text-align:center;margin-top:46px}
+}
+{% endraw %}
+</style>
+</head>
+<body>
+
+<!-- Resmi çıktı başlığı (yalnızca yazdırmada) -->
+<div class="print-only print-head">
+  <div class="ph-top">
+    <div>
+      <div class="ph-kurum">{{ kurum }}</div>
+      <div class="ph-title">Kampüs Su, Enerji ve Kaçak Yönetimi — Resmi Sürdürülebilirlik Raporu</div>
+      <div class="ph-sub">UI GreenMetric (WR: Su · EC: Enerji ve İklim Değişikliği) ve YÖK Sürdürülebilirlik Raporlaması kapsamında hazırlanmıştır.</div>
+    </div>
+    <div class="ph-meta">
+      <div>Raporlama günü: <b id="prTarih">—</b></div>
+      <div>Çıktı zamanı: <b id="prZaman">—</b></div>
+      <div>Belge no: <b id="prNo">—</b></div>
+    </div>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <div class="brand-mark"><span class="ii" data-ic="drop" data-s="20"></span></div>
+      <div>
+        <h1>Kampüs Su, Enerji &amp; Kaçak Yönetimi</h1>
+        <p>UI GreenMetric &amp; YÖK Sürdürülebilirlik Muhasebecisi · {{ kurum }}</p>
+      </div>
+    </div>
+    <nav class="actions" aria-label="İşlemler">
+      <div class="date-badge" title="Aktif sistem günü">
+        <span class="ii muted" data-ic="calendar"></span>
+        <span id="tarihEtiket">Yükleniyor…</span>
+        <span class="gn" id="gunNo">Gün —</span>
+      </div>
+      <button class="btn" id="btnGunBitir" type="button"><span class="ii" data-ic="calcheck"></span>Günü Bitir</button>
+      <button class="btn" id="btnExcel" type="button"><span class="ii" data-ic="sheet"></span>Excel Raporu (Detaylı)</button>
+      <button class="btn" id="btnPdf" type="button"><span class="ii" data-ic="printer"></span>Resmi PDF Çıktısı Al</button>
+      <button class="btn btn-primary" id="btnAdmin" type="button"><span class="ii" data-ic="shield"></span><span id="adminTxt">Admin Girişi</span></button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap tele-wrap">
+  <section class="tele" aria-label="Canlı telemetri" aria-live="off">
+    <div class="tele-live" id="teleLive"><span class="pulse"></span><span id="teleLiveTxt">BAĞLANIYOR</span></div>
+    <div class="ti"><span class="k">Konum</span><span class="ii" data-ic="cpu" data-s="15"></span><b id="teleKonum">—</b><span class="tag" id="teleKaynak">—</span></div>
+    <div class="ti"><span class="k">Sensör 1 · El</span><span class="chip s-idle" id="teleEl">—</span></div>
+    <div class="ti"><span class="k">Sensör 2 · Akış</span><span class="chip s-idle" id="teleAkis">—</span></div>
+    <div class="ti"><span class="k">Valf</span><span class="chip s-idle" id="teleDurum">—</span></div>
+    <div class="ti"><span class="k">Kaçak sayacı</span><span class="leakbar"><i id="teleBar"></i></span><b class="mono" id="teleSayac">0,0 / 10 sn</b></div>
+    <div class="tele-right">
+      <div class="ti sm" id="teleOzet">—</div>
+      <div class="ti"><span class="ii" data-ic="clock" data-s="15"></span><b class="mono" id="teleSaat">--:--:--</b></div>
+    </div>
+  </section>
+</div>
+
+<main class="wrap">
+  <div class="grid">
+
+    <!-- Kampüs KPI'ları -->
+    <section class="kpis span-3" aria-label="Kampüs günlük göstergeleri">
+      <div class="kpi"><div class="kpi-l"><span class="kpi-i bg-water c-water" data-ic="drop" data-s="15"></span>Harcanan Su</div><div class="kpi-v"><span id="kHarcanan">0</span><small>L</small></div><div class="kpi-s" id="kHarcananS">—</div></div>
+      <div class="kpi"><div class="kpi-l"><span class="kpi-i bg-saved c-saved" data-ic="leaf" data-s="15"></span>Kurtarılan Su</div><div class="kpi-v"><span id="kKurtarilan">0</span><small>L</small></div><div class="kpi-s" id="kKurtarilanS">—</div></div>
+      <div class="kpi"><div class="kpi-l"><span class="kpi-i bg-waste c-waste" data-ic="alert" data-s="15"></span>İsraf / Kaçak Su</div><div class="kpi-v"><span id="kIsraf">0</span><small>L</small></div><div class="kpi-s" id="kIsrafS">—</div></div>
+      <div class="kpi"><div class="kpi-l"><span class="kpi-i bg-energy c-energy" data-ic="zap" data-s="15"></span>Pompa Enerjisi</div><div class="kpi-v"><span id="kEnerji">0</span><small>kWh</small></div><div class="kpi-s" id="kEnerjiS">—</div></div>
+      <div class="kpi"><div class="kpi-l"><span class="kpi-i bg-co2 muted" data-ic="cloud" data-s="15"></span>Önlenen CO₂e</div><div class="kpi-v"><span id="kCo2">0</span><small>kg</small></div><div class="kpi-s" id="kCo2S">—</div></div>
+      <div class="kpi"><div class="kpi-l"><span class="kpi-i bg-waste c-waste" data-ic="lock" data-s="15"></span>Aktif Arıza</div><div class="kpi-v"><span id="kAriza">0</span><small>kayıt</small></div><div class="kpi-s" id="kArizaS">—</div></div>
+    </section>
+
+    <!-- Bina canlı kartları -->
+    <section class="buildings span-3" id="binalar" aria-label="Bina canlı kartları"></section>
+
+    <!-- Arıza defteri -->
+    <section class="card span-2" aria-label="Arıza defteri">
+      <div class="card-h">
+        <div>
+          <h2><span class="ii" data-ic="wrench"></span>Arıza Defteri</h2>
+          <p>Çapraz doğrulama ile yakalanan valf / tesisat kaçakları · kilit açma yalnızca Admin onayıyla</p>
+        </div>
+        <div class="tabs" role="tablist" id="arizaSekme">
+          <button class="tab on" type="button" data-f="AKTIF">Aktif<span class="n" id="nAktif">0</span></button>
+          <button class="tab" type="button" data-f="COZULDU">Çözülen<span class="n" id="nCozulen">0</span></button>
+          <button class="tab" type="button" data-f="TUM">Tümü<span class="n" id="nTum">0</span></button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="ledger">
+          <colgroup>
+            <col style="width:90px"><col style="width:102px"><col style="width:122px"><col>
+            <col style="width:78px"><col style="width:104px"><col style="width:120px"><col style="width:124px">
+          </colgroup>
+          <thead><tr><th>Kod</th><th>Tespit</th><th>Konum</th><th>Arıza Tipi</th><th class="num">İsraf</th><th>Bildirim</th><th>Durum</th><th>İşlem</th></tr></thead>
+          <tbody id="arizaGovde"><tr><td colspan="8"><div class="empty">Yükleniyor…</div></td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ESP32 simülatörü -->
+    <section class="card" id="simKart" aria-label="ESP32 donanım simülatörü">
+      <div class="card-h">
+        <div>
+          <h2><span class="ii" data-ic="cpu"></span>ESP32 Donanım Simülatörü</h2>
+          <p>Sensörleri elle sürün veya otomatik simülasyonu kullanın</p>
+        </div>
+      </div>
+      <div class="sim-grid">
+        <div class="auto-row">
+          <span>Otomatik simülasyon <span class="muted sm">(9 kat)</span></span>
+          <label class="switch"><input type="checkbox" id="simOto" aria-label="Otomatik simülasyon"><span></span></label>
+        </div>
+        <div class="field">
+          <label for="simBina">Bina</label>
+          <select id="simBina"></select>
+        </div>
+        <div class="field">
+          <span class="lbl">Kat</span>
+          <div class="seg" id="simKat"><button type="button" data-kat="1">Kat 1</button><button type="button" data-kat="2">Kat 2</button><button type="button" data-kat="3">Kat 3</button></div>
+        </div>
+        <div class="sens">
+          <button class="sens-btn" type="button" id="simEl"><span class="sl"><span class="ii" data-ic="hand" data-s="14"></span>Sensör 1 · Musluk El</span><b id="simElTxt">YOK</b></button>
+          <button class="sens-btn" type="button" id="simAkis"><span class="sl"><span class="ii" data-ic="waves" data-s="14"></span>Sensör 2 · Su Akışı</span><b id="simAkisTxt">YOK</b></button>
+        </div>
+        <button class="btn" type="button" id="simMusluk"><span class="ii" data-ic="drop" data-s="15"></span><span id="simMuslukTxt">Musluğu Aç (El + Akış)</span></button>
+        <div class="sim-state" id="simDurum">—</div>
+        <div class="sim-btns">
+          <button class="btn btn-warn" type="button" id="simKacak"><span class="ii" data-ic="alert" data-s="15"></span>Kaçak Senaryosu</button>
+          <button class="btn" type="button" id="simBirak"><span class="ii" data-ic="refresh" data-s="15"></span>Otomatiğe Bırak</button>
+        </div>
+        <p class="note">Kurtarma: El ve akışı açın, ikisini kapatın (sabunlama), 5 sn içinde yeniden açın — kapalı geçen süre kurtarılan suya eklenir. Kaçak senaryosu: el 0, akış 1 tutulur; 10 sn sonunda kat kilitlenir ve ntfy bildirimi gönderilir.</p>
+        <code class="api">POST /api/sensor
+{"bina":"YAZILIM","kat":2,"el":1,"akis":1,"debi_lpm":5.8}</code>
+      </div>
+    </section>
+
+    <!-- Günlük özet -->
+    <section class="card" aria-label="Günlük özet">
+      <div class="card-h">
+        <div>
+          <h2><span class="ii" data-ic="calendar"></span>Günlük Özet</h2>
+          <p>Ekranda 3 gün · yeni gün eklendikçe yukarı kayar</p>
+        </div>
+      </div>
+      <div class="snap" id="gunlukSnap"></div>
+    </section>
+
+    <!-- Haftalık özet -->
+    <section class="card span-2" aria-label="Haftalık özet">
+      <div class="card-h">
+        <div>
+          <h2><span class="ii" data-ic="chart"></span>Haftalık Özet (7 Günlük)</h2>
+          <p>Harcanan, kurtarılan ve israf su ile GreenMetric pompa enerjisi · her sayfa bir hafta</p>
+        </div>
+      </div>
+      <div class="snap" id="haftaSnap"></div>
+    </section>
+
+    <!-- Aylık özet -->
+    <section class="card span-3" aria-label="Aylık özet">
+      <div class="card-h">
+        <div>
+          <h2><span class="ii" data-ic="chart"></span>Aylık Özet (30 Günlük)</h2>
+          <p>30 günlük dönem grafiği ve stratejik projeksiyon · her sayfa bir dönem</p>
+        </div>
+      </div>
+      <div class="snap" id="aySnap"></div>
+    </section>
+
+  </div>
+
+  <div class="print-only print-sign">
+    <div class="sg"><div>Hazırlayan<br>Sürdürülebilirlik Ofisi</div><div>Kontrol Eden<br>Yapı İşleri Teknik Daire Bşk.</div><div>Onaylayan<br>Rektörlük</div></div>
+  </div>
+</main>
+
+<footer class="foot">
+  <span id="katsayiNot">—</span>
+  <span>ESP32 uç noktası: <span class="mono">POST /api/sensor</span> · Kilit sorgu: <span class="mono">GET /api/kat/&lt;bina&gt;/&lt;kat&gt;</span></span>
+</footer>
+
+<!-- Admin modalı -->
+<div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminBaslik">
+  <form class="modal-card" id="adminForm" autocomplete="off">
+    <h3 id="adminBaslik"><span class="ii" data-ic="shield"></span>Yönetici Girişi</h3>
+    <p>Arıza kayıtlarını kapatmak ve kat kilitlerini açmak için yönetici şifresini girin.</p>
+    <input type="password" id="adminSifre" placeholder="Yönetici şifresi" aria-label="Yönetici şifresi" required>
+    <div class="modal-err" id="adminHata" role="alert"></div>
+    <div class="modal-act">
+      <button class="btn" type="button" data-kapat>Vazgeç</button>
+      <button class="btn btn-primary" type="submit">Giriş Yap</button>
+    </div>
+  </form>
+</div>
+
+<!-- Onay modalı -->
+<div class="modal" id="onayModal" role="dialog" aria-modal="true" aria-labelledby="onayBaslik">
+  <div class="modal-card">
+    <h3 id="onayBaslik">Onay</h3>
+    <p id="onayMetin"></p>
+    <div class="modal-act">
+      <button class="btn" type="button" id="onayHayir">Vazgeç</button>
+      <button class="btn btn-primary" type="button" id="onayEvet">Onayla</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+{% raw %}
+(() => {
+'use strict';
+
+/* ───────────── Yardımcılar ───────────── */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const ESC = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'};
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ESC[c]);
+
+const IKON = {
+  drop: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+  alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  tree: '<path d="M8 19a4 4 0 0 1-2.24-7.32A3.5 3.5 0 0 1 9 6.03V6a3 3 0 1 1 6 0v.04a3.5 3.5 0 0 1 3.24 5.65A4 4 0 0 1 16 19Z"/><path d="M12 19v3"/>',
+  wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  hand: '<path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+  waves: '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  unlock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  calcheck: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+  sheet: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6M8 13h2M14 13h2M8 17h2M14 17h2"/>',
+  printer: '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  cpu: '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/>',
+  building: '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2M10 6h4M10 10h4M10 14h4M10 18h4"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'
+};
+const ic = (n, s = 16) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IKON[n] || ''}</svg>`;
+const ikonla = (kok = document) => $$('[data-ic]', kok).forEach(e => { e.innerHTML = ic(e.dataset.ic, +e.dataset.s || 16); });
+
+const NF = {};
+const fmt = (x, d = 1) => (NF[d] || (NF[d] = new Intl.NumberFormat('tr-TR', {minimumFractionDigits: d, maximumFractionDigits: d}))).format(Number(x) || 0);
+const ESNEK1 = new Intl.NumberFormat('tr-TR', {maximumFractionDigits: 1});
+const ESNEK3 = new Intl.NumberFormat('tr-TR', {maximumFractionDigits: 3});
+
+const AY = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const AY_K = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const GUN = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const GUN_K = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+const isoTarih = s => { const [y, m, d] = s.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+const gunEkle = (t, n) => new Date(t.getTime() + n * 86400000);
+const iki = n => String(n).padStart(2, '0');
+const uzunEtiket = t => `${t.getUTCDate()} ${AY[t.getUTCMonth()]} ${t.getUTCFullYear()} ${GUN[t.getUTCDay()]}`;
+const kisa = t => `${iki(t.getUTCDate())}.${iki(t.getUTCMonth() + 1)}.${t.getUTCFullYear()}`;
+const kisaIso = s => s ? kisa(isoTarih(s)) : '—';
+const aralik = (a, b) => `${a.getUTCDate()} ${AY_K[a.getUTCMonth()]} – ${b.getUTCDate()} ${AY_K[b.getUTCMonth()]} ${b.getUTCFullYear()}`;
+
+const DURUM = {
+  BOSTA: {t: 'Boşta', c: 's-idle'},
+  KULLANIM: {t: 'Kullanımda', c: 's-use'},
+  AKIS_YOK: {t: 'Akış Yok', c: 's-warn'},
+  KACAK: {t: 'Kaçak Şüphesi', c: 's-leak'},
+  KILITLI: {t: 'Kilitli', c: 's-lock'},
+  ARALIK: {t: 'Sabunlama Arası', c: 's-flow'}
+};
+const aralikMetni = (k, d) => `Ara ${fmt(k.aralik_sn, 1)}/${fmt(d.kurtarma_pencere, 0)} sn`;
+const KAYNAK = {SIM: 'SİM', ESP32: 'ESP32', PANEL: 'MANUEL'};
+const RENK = {h: '#38bdf8', k: '#34d399', i: '#f87171', e: '#fbbf24'};
+
+const S = {
+  d: null, gecmis: [], surum: -1, sec: {bina: null, kat: 1}, filtre: 'AKTIF',
+  grafik: [], kuruldu: false, sonArizaId: null, mesgul: false, tekrar: false,
+  tabloImza: '', admin: false, bekleyenCoz: null, binaKodlari: []
+};
+
+async function post(url, govde) {
+  const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(govde || {})});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.ok === false) throw new Error(j.hata || `İstek başarısız (${r.status})`);
+  return j;
+}
+
+function toast(msg, tur = 'info') {
+  const t = document.createElement('div');
+  t.className = `toast t-${tur}`;
+  t.innerHTML = `${ic(tur === 'danger' ? 'alert' : tur === 'ok' ? 'shield' : 'activity', 16)}<span>${esc(msg)}</span>`;
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 5600);
+}
+
+const modalAc = id => { $(id).classList.add('open'); };
+const modalKapat = id => { $(id).classList.remove('open'); };
+
+function onayla({baslik, metin, buton = 'Onayla', tur = 'primary'}) {
+  return new Promise(coz => {
+    $('#onayBaslik').textContent = baslik;
+    $('#onayMetin').innerHTML = metin;
+    const evet = $('#onayEvet'), hayir = $('#onayHayir');
+    evet.textContent = buton;
+    evet.className = `btn btn-${tur}`;
+    const bitir = v => { modalKapat('#onayModal'); evet.onclick = hayir.onclick = null; S.onayBitir = null; coz(v); };
+    S.onayBitir = bitir;
+    evet.onclick = () => bitir(true);
+    hayir.onclick = () => bitir(false);
+    modalAc('#onayModal');
+    setTimeout(() => evet.focus(), 30);
+  });
+}
+
+/* ───────────── Veri döngüsü ───────────── */
+async function yenile() {
+  if (S.mesgul) { S.tekrar = true; return; }
+  S.mesgul = true;
+  try {
+    const r = await fetch('/api/durum', {cache: 'no-store'});
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    S.d = d;
+    S.admin = d.admin;
+    if (!S.kuruldu) ilkKurulum(d);
+    if (d.gecmis_surum !== S.surum) {
+      const g = await (await fetch('/api/gecmis', {cache: 'no-store'})).json();
+      S.gecmis = g.gecmis || [];
+      S.surum = d.gecmis_surum;
+      panelleriKur();
+    }
+    ciz(d);
+  } catch (e) {
+    baglantiYok();
+  } finally {
+    S.mesgul = false;
+    if (S.tekrar) { S.tekrar = false; yenile(); }
+  }
+}
+
+function ilkKurulum(d) {
+  S.binaKodlari = d.binalar.map(b => b.kod);
+  S.sec.bina = S.binaKodlari[0];
+  $('#simBina').innerHTML = d.binalar.map(b => `<option value="${esc(b.kod)}">${esc(b.kod)} — ${esc(b.ad)}</option>`).join('');
+  binalariKur(d);
+  const k = d.katsayilar;
+  $('#katsayiNot').textContent = `Kurtarılan su: musluk kapandıktan sonra ${fmt(k.kurtarma_pencere_sn, 0)} sn içinde yeniden açılırsa kapalı süre × debi (varsayılan ${fmt(k.sensorlu_lpm, 0)} L/dk) · pompa ${fmt(k.pompa_kwh_m3, 2)} kWh/m³ · şebeke ${fmt(k.sebeke_emisyon, 3)} kg CO₂/kWh · 1 ağaç ≈ ${fmt(k.agac_kg_yil, 0)} kg CO₂/yıl` + (k.ntfy_konu ? ` · ntfy konusu: ${k.ntfy_konu}` : ' · ntfy kapalı');
+  S.kuruldu = true;
+}
+
+function ciz(d) {
+  $('#tarihEtiket').textContent = d.tarih_etiket;
+  $('#gunNo').textContent = `Gün ${d.gun_no}`;
+  adminButonu();
+  telemetri(d);
+  kpiler(d);
+  binalariGuncelle(d);
+  arizaTablosu(d);
+  simPanel(d);
+  canliGuncelle();
+  yeniArizaKontrol(d);
+}
+
+function baglantiYok() {
+  $('#teleLive').className = 'tele-live off';
+  $('#teleLiveTxt').textContent = 'BAĞLANTI YOK';
+}
+
+function yeniArizaKontrol(d) {
+  const maks = d.arizalar.reduce((m, a) => Math.max(m, a.id), 0);
+  if (S.sonArizaId !== null && maks > S.sonArizaId) {
+    d.arizalar.filter(a => a.id > S.sonArizaId).forEach(a =>
+      toast(`${a.kod}: ${a.bina} Kat ${a.kat} — el yokken 10 sn kesintisiz akış. Kat kilitlendi, mobil bildirim gönderiliyor.`, 'danger'));
+  }
+  S.sonArizaId = maks;
+}
+
+/* ───────────── Üst bar & telemetri ───────────── */
+function adminButonu() {
+  const b = $('#btnAdmin');
+  b.className = S.admin ? 'btn btn-admin-on' : 'btn btn-primary';
+  const ikonYeri = b.firstElementChild;
+  const istenen = S.admin ? 'logout' : 'shield';
+  if (ikonYeri.dataset.cizili !== istenen) { ikonYeri.innerHTML = ic(istenen, 16); ikonYeri.dataset.cizili = istenen; }
+  $('#adminTxt').textContent = S.admin ? 'Admin · Çıkış' : 'Admin Girişi';
+}
+
+function telemetri(d) {
+  const t = d.telemetri, o = d.ozet;
+  const canli = $('#teleLive');
+  canli.className = 'tele-live' + (o.kacak > 0 ? ' leak' : '');
+  $('#teleLiveTxt').textContent = o.kacak > 0 ? 'KAÇAK ŞÜPHESİ' : 'CANLI TELEMETRİ';
+  $('#teleKonum').textContent = `${t.bina} · Kat ${t.kat}`;
+  $('#teleKaynak').textContent = KAYNAK[t.kaynak] || t.kaynak;
+  chip($('#teleEl'), t.el ? 'Algılandı' : 'El Yok', t.el ? 's-use' : 's-idle');
+  const akisMetni = t.akis ? `Akış Var${t.debi_lpm ? ' · ' + fmt(t.debi_lpm, 1) + ' L/dk' : ''}` : 'Akış Yok';
+  chip($('#teleAkis'), akisMetni, t.akis ? (t.el ? 's-flow' : 's-leak') : 's-idle');
+  const ds = DURUM[t.durum];
+  chip($('#teleDurum'), t.kilitli ? 'Kapalı · Kilitli' : `Açık · ${t.durum === 'ARALIK' ? aralikMetni(t, d) : ds.t}`, ds.c);
+  const oran = Math.min(100, t.kacak_sn / d.kacak_esik * 100);
+  $('#teleBar').style.width = oran + '%';
+  $('#teleSayac').textContent = `${fmt(t.kacak_sn, 1)} / ${fmt(d.kacak_esik, 0)} sn`;
+  $('#teleOzet').textContent = `Kullanımda ${o.kullanimda} · Kilitli ${o.kilitli} · ESP32 ${o.esp32}` + (o.panel ? ` · Manuel ${o.panel}` : '') + ` · Sim ${o.sim}`;
+  $('#teleSaat').textContent = d.sunucu_saati;
+}
+
+function chip(el, metin, sinif) {
+  if (el.textContent !== metin) el.textContent = metin;
+  const c = `chip ${sinif}`;
+  if (el.className !== c) el.className = c;
+}
+
+function kpiler(d) {
+  const t = d.bugun.toplam;
+  $('#kHarcanan').textContent = fmt(t.harcanan, 1);
+  $('#kHarcananS').textContent = `${fmt(t.kullanim_sn / 60, 1)} dk doğrulanmış kullanım`;
+  $('#kKurtarilan').textContent = fmt(t.kurtarilan, 1);
+  $('#kKurtarilanS').textContent = `${t.kurtarma_sayisi || 0} sabunlama arası (≤${fmt(d.kurtarma_pencere, 0)} sn)`;
+  $('#kIsraf').textContent = fmt(t.israf, 1);
+  $('#kIsrafS').textContent = `İsraf oranı %${fmt(t.israf_orani, 1)} · ${t.kacak_sayisi} kaçak`;
+  $('#kEnerji').textContent = fmt(t.enerji, 3);
+  $('#kEnerjiS').textContent = `Tasarruf ${fmt(t.tasarruf_enerji, 3)} kWh`;
+  $('#kCo2').textContent = fmt(t.co2_onlenen, 3);
+  $('#kCo2S').textContent = `≈ ${fmt(t.agac_gun, 1)} ağaç-gün karbon tutumu`;
+  $('#kAriza').textContent = d.ozet.aktif_ariza;
+  $('#kArizaS').textContent = `${d.ozet.kilitli} kat kilitli`;
+}
+
+/* ───────────── Bina kartları ───────────── */
+function metrikKutusu(anahtar, etiket, birim, ikon, renk) {
+  return `<div class="metric">
+    <div class="ml"><span class="${renk}">${ic(ikon, 14)}</span>${etiket}</div>
+    <div class="mv"><span data-f="${anahtar}">0</span><small>${birim}</small></div>
+    <div class="ms" data-f="${anahtar}-alt">—</div>
+  </div>`;
+}
+
+function binalariKur(d) {
+  $('#binalar').innerHTML = d.binalar.map(b => `
+    <article class="card bcard" data-bina="${esc(b.kod)}">
+      <header class="bcard-h">
+        <div class="bt">
+          <span class="bicon">${ic('building', 18)}</span>
+          <div><h3>${esc(b.kod)}</h3><p>${esc(b.ad)}</p></div>
+        </div>
+        <span class="chip s-ok" data-f="durum">Normal</span>
+      </header>
+      <div class="metrics">
+        ${metrikKutusu('harcanan', 'Harcanan Su', 'L', 'drop', 'c-water')}
+        ${metrikKutusu('kurtarilan', 'Kurtarılan Su', 'L', 'leaf', 'c-saved')}
+        ${metrikKutusu('israf', 'İsraf / Kaçak Su', 'L', 'alert', 'c-waste')}
+        ${metrikKutusu('enerji', 'Pompa Enerjisi', 'kWh', 'zap', 'c-energy')}
+      </div>
+      <div class="floors">
+        ${b.katlar.map(k => `
+          <button class="floor" type="button" data-bina="${esc(b.kod)}" data-kat="${k.kat}" aria-label="${esc(b.kod)} Kat ${k.kat}">
+            <span class="fl-top"><b>Kat ${k.kat}</b><span class="src" data-f="src">SİM</span></span>
+            <span class="chip s-idle" data-f="chip">Boşta</span>
+            <span class="fl-sens"><span><i class="dot" data-f="el"></i>El</span><span><i class="dot" data-f="ak"></i>Akış</span></span>
+            <span class="fl-bar"><i data-f="bar"></i></span>
+          </button>`).join('')}
+      </div>
+      <footer class="bcard-f"><span>İsraf oranı <b data-f="oran">%0</b></span><span>Önlenen CO₂e <b data-f="co2">0</b> kg</span></footer>
+    </article>`).join('');
+}
+
+function binalariGuncelle(d) {
+  d.binalar.forEach(b => {
+    const kart = $(`.bcard[data-bina="${b.kod}"]`);
+    if (!kart) return;
+    const m = d.bugun.binalar[b.kod];
+    const f = a => kart.querySelector(`[data-f="${a}"]`);
+    f('harcanan').textContent = fmt(m.harcanan, 1);
+    f('harcanan-alt').textContent = `${fmt(m.kullanim_sn / 60, 1)} dk doğrulanmış kullanım`;
+    f('kurtarilan').textContent = fmt(m.kurtarilan, 1);
+    f('kurtarilan-alt').textContent = `${m.kurtarma_sayisi || 0} ara · ≈ ${fmt(m.agac_gun, 1)} ağaç-gün`;
+    f('israf').textContent = fmt(m.israf, 1);
+    f('israf-alt').textContent = `${m.kacak_sayisi} kaçak olayı`;
+    f('enerji').textContent = fmt(m.enerji, 3);
+    f('enerji-alt').textContent = `Tasarruf ${fmt(m.tasarruf_enerji, 3)} kWh`;
+    f('oran').textContent = `%${fmt(m.israf_orani, 1)}`;
+    f('co2').textContent = fmt(m.co2_onlenen, 3);
+    const kilitli = b.katlar.filter(k => k.kilitli).length;
+    const kacak = b.katlar.filter(k => k.durum === 'KACAK').length;
+    chip(f('durum'), kilitli ? `${kilitli} kat kilitli` : kacak ? 'Kaçak şüphesi' : 'Normal', kilitli ? 's-lock' : kacak ? 's-leak' : 's-ok');
+
+    b.katlar.forEach(k => {
+      const el = kart.querySelector(`.floor[data-kat="${k.kat}"]`);
+      const g = a => el.querySelector(`[data-f="${a}"]`);
+      const ds = DURUM[k.durum];
+      chip(g('chip'), k.durum === 'KACAK' ? `Kaçak ${fmt(k.kacak_sn, 0)}/${fmt(d.kacak_esik, 0)} sn`
+        : k.durum === 'ARALIK' ? aralikMetni(k, d) : ds.t, ds.c);
+      g('src').textContent = KAYNAK[k.kaynak] || k.kaynak;
+      g('el').className = 'dot' + (k.el ? ' el-on' : '');
+      g('ak').className = 'dot' + (k.akis ? (k.el ? ' ak-on' : ' ak-bad') : '');
+      g('bar').style.width = (k.durum === 'KACAK' ? Math.min(100, k.kacak_sn / d.kacak_esik * 100) : 0) + '%';
+      el.classList.toggle('locked', k.kilitli);
+      el.classList.toggle('sel', S.sec.bina === k.bina && S.sec.kat === k.kat);
+      el.title = k.kilitli ? `${k.ariza_kodu} · Valf kapalı — Admin onayı bekleniyor` : '';
+    });
+  });
+}
+
+/* ───────────── Arıza defteri ───────────── */
+function bildirimSinifi(b) {
+  if (b === 'Gönderildi') return 'ntfy-ok';
+  if (b === 'Gönderiliyor') return 'ntfy-wait';
+  if (b === 'Devre dışı') return 'muted';
+  return 'ntfy-bad';
+}
+
+function arizaTablosu(d) {
+  const tum = d.arizalar;
+  const aktif = tum.filter(a => a.durum === 'AKTIF').length;
+  $('#nAktif').textContent = aktif;
+  $('#nCozulen').textContent = tum.length - aktif;
+  $('#nTum').textContent = tum.length;
+  const liste = S.filtre === 'TUM' ? tum : tum.filter(a => a.durum === S.filtre);
+  const imza = S.filtre + '|' + S.admin + '|' + liste.map(a => `${a.id}:${a.durum}:${a.bildirim}`).join(',');
+  if (imza === S.tabloImza) return;
+  S.tabloImza = imza;
+  if (!liste.length) {
+    const mesaj = S.filtre === 'AKTIF' ? 'Aktif arıza yok — tüm katlarda su akışı normal.' : 'Kayıtlı arıza yok.';
+    $('#arizaGovde').innerHTML = `<tr><td colspan="8"><div class="empty">${mesaj}</div></td></tr>`;
+    return;
+  }
+  $('#arizaGovde').innerHTML = liste.map(a => {
+    const aktifMi = a.durum === 'AKTIF';
+    const islem = aktifMi
+      ? `<button class="btn btn-sm btn-fix" type="button" data-coz="${a.id}" title="${S.admin ? 'Arızayı kapat ve kilidi aç' : 'Admin girişi gerekir'}">${ic('wrench', 13)}Gider &amp; Aç</button>`
+      : `<span class="muted sm" title="Onaylayan: ${esc(a.onaylayan || '-')}">${esc(kisaIso(a.cozum_tarih))} <span class="mono">${esc(a.cozum_saat || '')}</span></span>`;
+    return `<tr class="${aktifMi ? 'r-active' : ''}">
+      <td class="mono">${esc(a.kod)}</td>
+      <td>${esc(kisaIso(a.tarih))}<span class="l2 mono">${esc(a.saat)}</span></td>
+      <td><b>${esc(a.bina)}</b> · Kat ${a.kat}</td>
+      <td title="${esc(a.aciklama)}">${esc(a.tip)}<span class="l2">El yokken ${fmt(d.kacak_esik, 0)} sn kesintisiz akış</span></td>
+      <td class="num">${fmt(a.israf, 2)} L</td>
+      <td class="${bildirimSinifi(a.bildirim)}">${esc(a.bildirim || '—')}</td>
+      <td><span class="chip ${aktifMi ? 's-lock' : 's-ok'}">${aktifMi ? 'Aktif · Kilitli' : 'Çözüldü'}</span></td>
+      <td>${islem}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function arizaCoz(id) {
+  if (!S.admin) { S.bekleyenCoz = id; adminAc(); return; }
+  const a = S.d.arizalar.find(x => x.id === id);
+  if (!a) return;
+  const ok = await onayla({
+    baslik: 'Arıza giderildi mi?',
+    metin: `<b>${esc(a.kod)}</b> · ${esc(a.bina)} Kat ${a.kat}<br>Kayıt “giderildi” olarak kapatılacak ve katın solenoid valf kilidi açılacak. İşlem arıza defterine onay zamanıyla işlenir.`,
+    buton: 'Gider & Aç', tur: 'ok'
+  });
+  if (!ok) return;
+  try {
+    await post(`/api/ariza/${id}/coz`);
+    toast(`${a.kod} kapatıldı · ${a.bina} Kat ${a.kat} kilidi açıldı.`, 'ok');
+    yenile();
+  } catch (e) {
+    toast(e.message, 'danger');
+    if (/yetki/i.test(e.message)) { S.admin = false; adminButonu(); }
+  }
+}
+
+function adminAc() {
+  $('#adminHata').textContent = '';
+  $('#adminSifre').value = '';
+  modalAc('#adminModal');
+  setTimeout(() => $('#adminSifre').focus(), 30);
+}
+
+/* ───────────── Simülatör paneli ───────────── */
+const katBul = (d, b, k) => d.binalar.find(x => x.kod === b)?.katlar.find(x => x.kat === k);
+
+function simPanel(d) {
+  if ($('#simBina').value !== S.sec.bina) $('#simBina').value = S.sec.bina;
+  $$('#simKat button').forEach(b => b.classList.toggle('on', +b.dataset.kat === S.sec.kat));
+  if (document.activeElement !== $('#simOto')) $('#simOto').checked = d.sim_aktif;
+  const k = katBul(d, S.sec.bina, S.sec.kat);
+  if (!k) return;
+  $('#simEl').className = 'sens-btn' + (k.el ? ' on-el' : '');
+  $('#simElTxt').textContent = k.el ? 'VAR (1)' : 'YOK (0)';
+  $('#simAkis').className = 'sens-btn' + (k.akis ? ' on-ak' : '');
+  $('#simAkisTxt').textContent = k.akis ? 'VAR (1)' : 'YOK (0)';
+  const ds = DURUM[k.durum];
+  const aciklama = k.kilitli ? `${k.ariza_kodu} · valf kapalı, musluk su vermez`
+    : k.durum === 'AKIS_YOK' ? 'Musluk açık, su akmıyor — tüketim artmaz'
+    : k.durum === 'KACAK' ? `${fmt(k.kacak_sn, 1)} sn / ${fmt(d.kacak_esik, 0)} sn — kilit eşiğine yaklaşıyor`
+    : k.durum === 'ARALIK' ? `Kapalı ${fmt(k.aralik_sn, 1)} sn — ${fmt(d.kurtarma_pencere, 0)} sn içinde açılırsa ≈ ${fmt(k.bekleyen_kurtarma, 2)} L kurtarılır`
+    : `Kaynak: ${KAYNAK[k.kaynak] || k.kaynak}`;
+  $('#simDurum').innerHTML = `<span><b>${esc(k.bina)} · Kat ${k.kat}</b> &nbsp;<span class="chip ${ds.c}">${ds.t}</span></span><span>${esc(aciklama)}</span>`;
+  const acik = k.el && k.akis;
+  $('#simMuslukTxt').textContent = acik ? 'Musluğu Kapat (El + Akış = 0)' : 'Musluğu Aç (El + Akış = 1)';
+  $('#simMusluk').disabled = k.kilitli;
+  $('#simBirak').disabled = k.kaynak !== 'PANEL';
+  $('#simKacak').disabled = k.kilitli;
+}
+
+async function sensorGonder(alan) {
+  const k = katBul(S.d, S.sec.bina, S.sec.kat);
+  if (!k) return;
+  const govde = {bina: k.bina, kat: k.kat, el: k.el, akis: k.akis, kaynak: 'PANEL'};
+  govde[alan] = k[alan] ? 0 : 1;
+  try { await post('/api/sensor', govde); yenile(); } catch (e) { toast(e.message, 'danger'); }
+}
+
+/* ───────────── Özet panelleri (scroll-snap) ───────────── */
+const tumGunler = () => S.d ? [...S.gecmis, S.d.bugun] : [...S.gecmis];
+const topla = (gunler, a) => gunler.reduce((s, g) => s + (g.toplam[a] || 0), 0);
+const gunTarihi = no => gunEkle(isoTarih(S.d.baslangic), no - 1);
+
+function gunKarti(g) {
+  const t = g.toplam;
+  const satir = b => {
+    const m = g.binalar[b];
+    return `<tr><td>${esc(b)}</td><td>${fmt(m.harcanan, 1)}</td><td class="v-s">${fmt(m.kurtarilan, 1)}</td><td class="v-w">${fmt(m.israf, 1)}</td><td>${fmt(m.enerji, 3)}</td></tr>`;
+  };
+  return `<article class="day${g.canli ? ' live' : ''}" data-gun="${g.gun_no}">
+    <div class="day-h"><b>${esc(g.etiket)}</b><span class="day-tags"><span class="tag">Gün ${g.gun_no}</span>${g.canli ? '<span class="tag live">CANLI</span>' : '<span class="tag">ARŞİV</span>'}</span></div>
+    <div class="day-meta">
+      <span class="mm tree">${ic('tree', 14)}<b>${fmt(t.agac_gun, 1)}</b>ağaç-gün</span>
+      <span class="mm co2">${ic('cloud', 14)}<b>${fmt(t.co2_onlenen, 3)}</b>kg CO₂e önlendi</span>
+      <span class="mm lk">${ic('alert', 14)}<b>${t.kacak_sayisi}</b>kaçak</span>
+    </div>
+    <table class="mini">
+      <colgroup><col class="c1"><col><col><col><col></colgroup>
+      <thead><tr><th>Bina</th><th>Su (L)</th><th>Kurt. (L)</th><th>İsraf (L)</th><th>kWh</th></tr></thead>
+      <tbody>${S.binaKodlari.map(satir).join('')}
+        <tr class="tot"><td>TOPLAM</td><td>${fmt(t.harcanan, 1)}</td><td class="v-s">${fmt(t.kurtarilan, 1)}</td><td class="v-w">${fmt(t.israf, 1)}</td><td>${fmt(t.enerji, 3)}</td></tr>
+      </tbody>
+    </table>
+  </article>`;
+}
+
+function blokVerisi(bas, uzun, ay) {
+  const harita = new Map(tumGunler().map(g => [g.gun_no, g]));
+  const v = {etiket: [], h: [], k: [], i: [], e: [], gunler: []};
+  for (let n = bas; n < bas + uzun; n++) {
+    const t = gunTarihi(n), g = harita.get(n);
+    v.etiket.push(ay ? `${iki(t.getUTCDate())}.${iki(t.getUTCMonth() + 1)}` : [`${t.getUTCDate()} ${AY_K[t.getUTCMonth()]}`, GUN_K[t.getUTCDay()]]);
+    if (g) {
+      v.h.push(g.toplam.harcanan); v.k.push(g.toplam.kurtarilan); v.i.push(g.toplam.israf); v.e.push(g.toplam.enerji);
+      v.gunler.push(g);
+    } else {
+      v.h.push(null); v.k.push(null); v.i.push(null); v.e.push(null);
+    }
+  }
+  return v;
+}
+
+function haftaOzetHtml(v) {
+  const g = v.gunler;
+  return `<div class="ps"><span>Harcanan Su</span><b class="c-water">${fmt(topla(g, 'harcanan'), 1)} L</b></div>
+    <div class="ps"><span>Kurtarılan Su</span><b class="c-saved">${fmt(topla(g, 'kurtarilan'), 1)} L</b></div>
+    <div class="ps"><span>İsraf Su</span><b class="c-waste">${fmt(topla(g, 'israf'), 1)} L</b></div>
+    <div class="ps"><span>GreenMetric Enerji</span><b class="c-energy">${fmt(topla(g, 'enerji'), 3)} kWh</b></div>
+    <div class="ps"><span>Önlenen CO₂e</span><b>${fmt(topla(g, 'co2_onlenen'), 3)} kg</b><i>≈ ${fmt(topla(g, 'agac_gun'), 1)} ağaç-gün</i></div>`;
+}
+
+function projeksiyonHtml(v) {
+  const g = v.gunler, n = g.length, k = S.d.katsayilar;
+  if (!n) return '<div class="empty">Bu dönem için veri yok.</div>';
+  const ort = a => topla(g, a) / n;
+  const yil = a => ort(a) * 365;
+  const pompalanan = topla(g, 'harcanan') + topla(g, 'israf');
+  const oran = pompalanan > 0 ? topla(g, 'israf') / pompalanan * 100 : 0;
+  return `<h4>Gerçekleşme</h4>
+    <dl>
+      <dt>Kayıtlı gün</dt><dd>${n} / 30</dd>
+      <dt>Ort. günlük harcanan</dt><dd>${fmt(ort('harcanan'), 1)} L</dd>
+      <dt>Ort. günlük kurtarılan</dt><dd class="hl">${fmt(ort('kurtarilan'), 1)} L</dd>
+      <dt>Kaçak olayı</dt><dd>${topla(g, 'kacak_sayisi')}</dd>
+      <dt>İsraf oranı (WR)</dt><dd>%${fmt(oran, 2)}</dd>
+    </dl>
+    <h4>30 Günlük Projeksiyon</h4>
+    <dl>
+      <dt>Harcanan su</dt><dd>${fmt(ort('harcanan') * 30, 0)} L</dd>
+      <dt>Kurtarılan su</dt><dd class="hl">${fmt(ort('kurtarilan') * 30, 0)} L</dd>
+      <dt>İsraf / kaçak su</dt><dd>${fmt(ort('israf') * 30, 1)} L</dd>
+      <dt>Pompa enerjisi</dt><dd>${fmt(ort('enerji') * 30, 2)} kWh</dd>
+      <dt>Önlenen CO₂e</dt><dd>${fmt(ort('co2_onlenen') * 30, 2)} kg</dd>
+    </dl>
+    <h4>Yıllık Projeksiyon (365 gün)</h4>
+    <dl>
+      <dt>Harcanan su</dt><dd>${fmt(yil('harcanan') / 1000, 2)} m³</dd>
+      <dt>Kurtarılan su</dt><dd class="hl">${fmt(yil('kurtarilan') / 1000, 2)} m³</dd>
+      <dt>Tasarruf edilen enerji</dt><dd>${fmt(yil('tasarruf_enerji'), 1)} kWh</dd>
+      <dt>Önlenen CO₂e</dt><dd>${fmt(yil('co2_onlenen'), 1)} kg</dd>
+      <dt>Ağaç eşdeğeri</dt><dd class="hl">≈ ${fmt(yil('co2_onlenen') / k.agac_kg_yil, 1)} ağaç</dd>
+    </dl>
+    <p class="proj-note">Projeksiyon, dönemdeki kayıtlı günlerin ortalamasının doğrusal ekstrapolasyonudur (açık gün dahil). Ağaç eşdeğeri: 1 olgun ağaç ≈ ${fmt(k.agac_kg_yil, 0)} kg CO₂/yıl.</p>`;
+}
+
+function grafikAyar(ay) {
+  return {
+    responsive: true, maintainAspectRatio: false, animation: {duration: 350},
+    interaction: {mode: 'index', intersect: false},
+    plugins: {
+      legend: {position: 'bottom', labels: {usePointStyle: true, pointStyle: 'rectRounded', boxWidth: 8, boxHeight: 8, padding: 14, font: {size: 11}, sort: (a, b) => a.datasetIndex - b.datasetIndex}},
+      tooltip: {
+        backgroundColor: '#0b1324', borderColor: '#263449', borderWidth: 1, padding: 10, titleColor: '#e2e8f0', bodyColor: '#cbd5e1',
+        filter: c => c.parsed.y !== null && c.parsed.y !== undefined,
+        itemSort: (a, b) => a.datasetIndex - b.datasetIndex,
+        callbacks: {
+          title: it => { const l = it[0]?.label; return Array.isArray(l) ? l.join(' ') : String(l || '').replace(',', ' '); },
+          label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y, c.dataset.yAxisID === 'y1' ? 3 : 1)}`
+        }
+      }
+    },
+    scales: {
+      x: {grid: {display: false}, border: {color: '#263449'}, ticks: {font: {size: 10.5}, maxRotation: 0, autoSkip: ay, autoSkipPadding: 6}},
+      y: {beginAtZero: true, grid: {color: 'rgba(148,163,184,.08)'}, border: {display: false}, title: {display: true, text: 'Litre (L)', font: {size: 10.5}}, ticks: {maxTicksLimit: 7, callback: x => ESNEK1.format(x)}},
+      y1: {beginAtZero: true, position: 'right', grid: {drawOnChartArea: false}, border: {display: false}, title: {display: true, text: 'Enerji (kWh)', font: {size: 10.5}}, ticks: {maxTicksLimit: 7, callback: x => ESNEK3.format(x)}}
+    }
+  };
+}
+
+function grafikOlustur(tur, idx) {
+  const uzun = tur === 'hafta' ? 7 : 30, bas = idx * uzun + 1, ay = tur === 'ay';
+  const tuval = $(`#${tur}-${idx}`);
+  if (!tuval) return;
+  if (typeof Chart === 'undefined') {
+    tuval.parentElement.insertAdjacentHTML('beforeend', '<div class="chart-fallback">Grafik kütüphanesi (Chart.js) yüklenemedi.<br>İnternet bağlantısını kontrol edip sayfayı yenileyin.</div>');
+    return;
+  }
+  const v = blokVerisi(bas, uzun, ay);
+  const sutun = (label, data, renk, eksen = 'y') => ({type: 'bar', label, data, backgroundColor: renk, borderRadius: 3, yAxisID: eksen, maxBarThickness: ay ? 9 : 22, categoryPercentage: ay ? .82 : .74, barPercentage: .9});
+  const ds = [sutun('Harcanan Su (L)', v.h, RENK.h), sutun('Kurtarılan Su (L)', v.k, RENK.k), sutun('İsraf Su (L)', v.i, RENK.i)];
+  ds.push(ay
+    ? {type: 'line', label: 'GreenMetric Enerji (kWh)', data: v.e, borderColor: RENK.e, backgroundColor: RENK.e, yAxisID: 'y1', tension: .3, pointRadius: 2.5, borderWidth: 2, spanGaps: false, order: -1}
+    : sutun('GreenMetric Enerji (kWh)', v.e, RENK.e, 'y1'));
+  const chart = new Chart(tuval, {type: 'bar', data: {labels: v.etiket, datasets: ds}, options: grafikAyar(ay)});
+  S.grafik.push({tur, idx, bas, uzun, chart});
+}
+
+function panelleriKur() {
+  const d = S.d;
+  if (!d) return;
+  const gunler = tumGunler();
+  $('#gunlukSnap').innerHTML = gunler.map(gunKarti).join('');
+
+  S.grafik.forEach(g => g.chart.destroy());
+  S.grafik = [];
+  const haftaSay = Math.floor((d.gun_no - 1) / 7) + 1;
+  const aySay = Math.floor((d.gun_no - 1) / 30) + 1;
+  const bas0 = isoTarih(d.baslangic);
+
+  $('#haftaSnap').innerHTML = Array.from({length: haftaSay}, (_, w) => {
+    const a = gunEkle(bas0, w * 7), b = gunEkle(bas0, w * 7 + 6);
+    return `<div class="page" data-tur="hafta" data-idx="${w}">
+      <div class="page-h"><div><b>Hafta ${w + 1}</b><span class="rng">${aralik(a, b)}</span></div><span class="tag${w === haftaSay - 1 ? ' live' : ''}">${w === haftaSay - 1 ? 'GÜNCEL HAFTA' : 'TAMAMLANDI'}</span></div>
+      <div class="chart-box"><canvas id="hafta-${w}" role="img" aria-label="Hafta ${w + 1} su ve enerji grafiği"></canvas></div>
+      <div class="page-sum" data-ozet="hafta-${w}"></div>
+    </div>`;
+  }).join('');
+
+  $('#aySnap').innerHTML = Array.from({length: aySay}, (_, m) => {
+    const a = gunEkle(bas0, m * 30), b = gunEkle(bas0, m * 30 + 29);
+    return `<div class="page" data-tur="ay" data-idx="${m}">
+      <div class="page-h"><div><b>Dönem ${m + 1}</b><span class="rng">${aralik(a, b)}</span></div><span class="tag${m === aySay - 1 ? ' live' : ''}">${m === aySay - 1 ? 'GÜNCEL DÖNEM' : 'TAMAMLANDI'}</span></div>
+      <div class="month-body">
+        <div class="chart-box"><canvas id="ay-${m}" role="img" aria-label="Dönem ${m + 1} su ve enerji grafiği"></canvas></div>
+        <aside class="proj" data-ozet="ay-${m}"></aside>
+      </div>
+    </div>`;
+  }).join('');
+
+  for (let w = 0; w < haftaSay; w++) { grafikOlustur('hafta', w); sayfaOzeti('hafta', w); }
+  for (let m = 0; m < aySay; m++) { grafikOlustur('ay', m); sayfaOzeti('ay', m); }
+
+  const ilk = !S.panelKuruldu;
+  S.panelKuruldu = true;
+  requestAnimationFrame(() => ['#gunlukSnap', '#haftaSnap', '#aySnap'].forEach(s => {
+    const el = $(s);
+    el.scrollTo({top: el.scrollHeight, behavior: ilk ? 'auto' : 'smooth'});
+  }));
+}
+
+function sayfaOzeti(tur, idx) {
+  const uzun = tur === 'hafta' ? 7 : 30;
+  const v = blokVerisi(idx * uzun + 1, uzun, tur === 'ay');
+  const kutu = $(`[data-ozet="${tur}-${idx}"]`);
+  if (!kutu) return v;
+  const html = tur === 'hafta' ? haftaOzetHtml(v) : projeksiyonHtml(v);
+  if (kutu.dataset.imza !== html) { kutu.innerHTML = html; kutu.dataset.imza = html; }
+  return v;
+}
+
+function canliGuncelle() {
+  const d = S.d;
+  if (!d) return;
+  const kap = $('#gunlukSnap');
+  const son = kap.lastElementChild;
+  if (son && +son.dataset.gun === d.bugun.gun_no) {
+    const yeni = gunKarti(d.bugun);
+    if (son.dataset.imza !== yeni) {
+      const sablon = document.createElement('template');
+      sablon.innerHTML = yeni.trim();
+      const el = sablon.content.firstElementChild;
+      el.dataset.imza = yeni;
+      kap.replaceChild(el, son);
+    }
+  }
+  S.grafik.forEach(g => {
+    if (d.gun_no < g.bas || d.gun_no >= g.bas + g.uzun) return;
+    const v = sayfaOzeti(g.tur, g.idx);
+    const ds = g.chart.data.datasets;
+    ds[0].data = v.h; ds[1].data = v.k; ds[2].data = v.i; ds[3].data = v.e;
+    g.chart.update('none');
+  });
+  if (typeof Chart === 'undefined') {
+    const w = Math.floor((d.gun_no - 1) / 7), m = Math.floor((d.gun_no - 1) / 30);
+    sayfaOzeti('hafta', w); sayfaOzeti('ay', m);
+  }
+}
+
+/* ───────────── Olaylar ───────────── */
+function olaylariBagla() {
+  $('#btnGunBitir').addEventListener('click', async () => {
+    const d = S.d;
+    if (!d) return;
+    const sonraki = uzunEtiket(gunEkle(isoTarih(d.tarih), 1));
+    const ok = await onayla({
+      baslik: 'Günü bitir ve arşivle',
+      metin: `<b>${esc(d.tarih_etiket)}</b> tarihli su, israf, enerji ve kat bazlı veriler arşive alınacak.<br>Takvim <b>${esc(sonraki)}</b> tarihine ilerleyecek. Kilitli katlar Admin onayına kadar kilitli kalır.`,
+      buton: 'Günü Bitir'
+    });
+    if (!ok) return;
+    try {
+      const r = await post('/api/gun/bitir');
+      toast(`${r.arsivlenen} arşivlendi. Yeni gün: ${r.yeni_tarih}`, 'ok');
+      yenile();
+    } catch (e) { toast(e.message, 'danger'); }
+  });
+
+  $('#btnExcel').addEventListener('click', () => { window.location.href = '/rapor/excel'; });
+  $('#btnPdf').addEventListener('click', () => window.print());
+  window.addEventListener('beforeprint', () => {
+    const d = S.d, simdi = new Date();
+    $('#prTarih').textContent = d ? d.tarih_etiket : '—';
+    $('#prZaman').textContent = simdi.toLocaleString('tr-TR');
+    $('#prNo').textContent = d ? `SUR-${d.tarih.replaceAll('-', '')}-${iki(simdi.getHours())}${iki(simdi.getMinutes())}` : '—';
+    S.grafik.forEach(g => g.chart.resize());
+  });
+  window.addEventListener('afterprint', () => S.grafik.forEach(g => g.chart.resize()));
+
+  $('#btnAdmin').addEventListener('click', async () => {
+    if (!S.admin) { S.bekleyenCoz = null; adminAc(); return; }
+    try { await post('/api/admin/cikis'); S.admin = false; adminButonu(); S.tabloImza = ''; toast('Yönetici oturumu kapatıldı.'); yenile(); }
+    catch (e) { toast(e.message, 'danger'); }
+  });
+
+  $('#adminForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = e.submitter || $('#adminForm button[type=submit]');
+    btn.disabled = true;
+    try {
+      await post('/api/admin/giris', {sifre: $('#adminSifre').value});
+      S.admin = true; S.tabloImza = '';
+      modalKapat('#adminModal');
+      adminButonu();
+      toast('Yönetici oturumu açıldı.', 'ok');
+      yenile();
+      if (S.bekleyenCoz) { const id = S.bekleyenCoz; S.bekleyenCoz = null; arizaCoz(id); }
+    } catch (err) {
+      $('#adminHata').textContent = err.message;
+      $('#adminSifre').select();
+    } finally { btn.disabled = false; }
+  });
+
+  $$('[data-kapat]').forEach(b => b.addEventListener('click', () => modalKapat('#' + b.closest('.modal').id)));
+  $$('.modal').forEach(m => m.addEventListener('mousedown', e => {
+    if (e.target !== m) return;
+    if (m.id === 'onayModal' && S.onayBitir) S.onayBitir(false); else modalKapat('#' + m.id);
+  }));
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if ($('#onayModal').classList.contains('open') && S.onayBitir) S.onayBitir(false);
+    modalKapat('#adminModal');
+  });
+
+  $('#arizaSekme').addEventListener('click', e => {
+    const t = e.target.closest('.tab');
+    if (!t) return;
+    S.filtre = t.dataset.f;
+    $$('#arizaSekme .tab').forEach(x => x.classList.toggle('on', x === t));
+    S.tabloImza = '';
+    if (S.d) arizaTablosu(S.d);
+  });
+  $('#arizaGovde').addEventListener('click', e => {
+    const b = e.target.closest('[data-coz]');
+    if (b) arizaCoz(+b.dataset.coz);
+  });
+
+  $('#binalar').addEventListener('click', e => {
+    const f = e.target.closest('.floor');
+    if (!f) return;
+    S.sec = {bina: f.dataset.bina, kat: +f.dataset.kat};
+    if (S.d) { simPanel(S.d); binalariGuncelle(S.d); }
+  });
+
+  $('#simBina').addEventListener('change', e => { S.sec.bina = e.target.value; if (S.d) { simPanel(S.d); binalariGuncelle(S.d); } });
+  $('#simKat').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    S.sec.kat = +b.dataset.kat;
+    if (S.d) { simPanel(S.d); binalariGuncelle(S.d); }
+  });
+  $('#simMusluk').addEventListener('click', async () => {
+    const k = katBul(S.d, S.sec.bina, S.sec.kat);
+    if (!k) return;
+    const yeni = k.el && k.akis ? 0 : 1;
+    try { await post('/api/sensor', {bina: k.bina, kat: k.kat, el: yeni, akis: yeni, kaynak: 'PANEL'}); yenile(); }
+    catch (e) { toast(e.message, 'danger'); }
+  });
+  $('#simEl').addEventListener('click', () => sensorGonder('el'));
+  $('#simAkis').addEventListener('click', () => sensorGonder('akis'));
+  $('#simKacak').addEventListener('click', async () => {
+    try {
+      await post('/api/sim/kacak', S.sec);
+      toast(`${S.sec.bina} Kat ${S.sec.kat}: kaçak senaryosu başladı (el yok + akış var). 10 sn içinde kat kilitlenecek.`);
+      yenile();
+    } catch (e) { toast(e.message, 'danger'); }
+  });
+  $('#simBirak').addEventListener('click', async () => {
+    try { await post('/api/sim/birak', S.sec); yenile(); } catch (e) { toast(e.message, 'danger'); }
+  });
+  $('#simOto').addEventListener('change', async e => {
+    try {
+      await post('/api/sim/otomatik', {aktif: e.target.checked ? 1 : 0});
+      toast(e.target.checked ? 'Otomatik simülasyon açıldı.' : 'Otomatik simülasyon durduruldu. Sensörleri elle veya ESP32 ile sürebilirsiniz.');
+      yenile();
+    } catch (err) { toast(err.message, 'danger'); }
+  });
+}
+
+/* ───────────── Başlat ───────────── */
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.color = '#94a3b8';
+  Chart.defaults.borderColor = 'rgba(148,163,184,.12)';
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+}
+ikonla();
+olaylariBagla();
+yenile();
+setInterval(yenile, 1000);
+})();
+{% endraw %}
+</script>
+</body>
+</html>
